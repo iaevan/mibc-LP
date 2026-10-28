@@ -1,0 +1,907 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-28T20:04:46.018838+00:00",
+  "title": "Design System: Beyond the Ordinary — MIBC Recruitment",
+  "extensions": {
+    "colorMeta": {
+      "signal-ground": {
+        "role": "primary",
+        "displayName": "Signal Ground",
+        "tonalRamp": [
+          "oklch(15.00% 0.04683 3.97)",
+          "oklch(26.43% 0.04683 3.97)",
+          "oklch(37.86% 0.04683 3.97)",
+          "oklch(49.29% 0.04683 3.97)",
+          "oklch(60.71% 0.04683 3.97)",
+          "oklch(72.14% 0.04683 3.97)",
+          "oklch(83.57% 0.04683 3.97)",
+          "oklch(95.00% 0.04683 3.97)"
+        ]
+      },
+      "signal-ink": {
+        "role": "neutral",
+        "displayName": "Signal Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.02213 89.79)",
+          "oklch(26.43% 0.02213 89.79)",
+          "oklch(37.86% 0.02213 89.79)",
+          "oklch(49.29% 0.02213 89.79)",
+          "oklch(60.71% 0.02213 89.79)",
+          "oklch(72.14% 0.02213 89.79)",
+          "oklch(83.57% 0.02213 89.79)",
+          "oklch(95.00% 0.02213 89.79)"
+        ]
+      },
+      "signal-muted": {
+        "role": "neutral",
+        "displayName": "Signal Muted",
+        "tonalRamp": [
+          "oklch(15.00% 0.03076 7.35)",
+          "oklch(26.43% 0.03076 7.35)",
+          "oklch(37.86% 0.03076 7.35)",
+          "oklch(49.29% 0.03076 7.35)",
+          "oklch(60.71% 0.03076 7.35)",
+          "oklch(72.14% 0.03076 7.35)",
+          "oklch(83.57% 0.03076 7.35)",
+          "oklch(95.00% 0.03076 7.35)"
+        ]
+      },
+      "signal-line": {
+        "role": "neutral",
+        "displayName": "Signal Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.07135 2.49)",
+          "oklch(26.43% 0.07135 2.49)",
+          "oklch(37.86% 0.07135 2.49)",
+          "oklch(49.29% 0.07135 2.49)",
+          "oklch(60.71% 0.07135 2.49)",
+          "oklch(72.14% 0.07135 2.49)",
+          "oklch(83.57% 0.07135 2.49)",
+          "oklch(95.00% 0.07135 2.49)"
+        ]
+      },
+      "signal-accent": {
+        "role": "primary",
+        "displayName": "Signal Accent",
+        "tonalRamp": [
+          "oklch(15.00% 0.14785 17.96)",
+          "oklch(26.43% 0.14785 17.96)",
+          "oklch(37.86% 0.14785 17.96)",
+          "oklch(49.29% 0.14785 17.96)",
+          "oklch(60.71% 0.14785 17.96)",
+          "oklch(72.14% 0.14785 17.96)",
+          "oklch(83.57% 0.14785 17.96)",
+          "oklch(95.00% 0.14785 17.96)"
+        ]
+      },
+      "signal-manifesto": {
+        "role": "neutral",
+        "displayName": "Signal Manifesto",
+        "tonalRamp": [
+          "oklch(15.00% 0.05467 19.75)",
+          "oklch(26.43% 0.05467 19.75)",
+          "oklch(37.86% 0.05467 19.75)",
+          "oklch(49.29% 0.05467 19.75)",
+          "oklch(60.71% 0.05467 19.75)",
+          "oklch(72.14% 0.05467 19.75)",
+          "oklch(83.57% 0.05467 19.75)",
+          "oklch(95.00% 0.05467 19.75)"
+        ]
+      },
+      "edition-ground": {
+        "role": "neutral",
+        "displayName": "Edition Ground",
+        "tonalRamp": [
+          "oklch(15.00% 0.01682 88.00)",
+          "oklch(26.43% 0.01682 88.00)",
+          "oklch(37.86% 0.01682 88.00)",
+          "oklch(49.29% 0.01682 88.00)",
+          "oklch(60.71% 0.01682 88.00)",
+          "oklch(72.14% 0.01682 88.00)",
+          "oklch(83.57% 0.01682 88.00)",
+          "oklch(95.00% 0.01682 88.00)"
+        ]
+      },
+      "edition-ink": {
+        "role": "neutral",
+        "displayName": "Edition Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.05539 19.28)",
+          "oklch(26.43% 0.05539 19.28)",
+          "oklch(37.86% 0.05539 19.28)",
+          "oklch(49.29% 0.05539 19.28)",
+          "oklch(60.71% 0.05539 19.28)",
+          "oklch(72.14% 0.05539 19.28)",
+          "oklch(83.57% 0.05539 19.28)",
+          "oklch(95.00% 0.05539 19.28)"
+        ]
+      },
+      "edition-muted": {
+        "role": "neutral",
+        "displayName": "Edition Muted",
+        "tonalRamp": [
+          "oklch(15.00% 0.03778 30.05)",
+          "oklch(26.43% 0.03778 30.05)",
+          "oklch(37.86% 0.03778 30.05)",
+          "oklch(49.29% 0.03778 30.05)",
+          "oklch(60.71% 0.03778 30.05)",
+          "oklch(72.14% 0.03778 30.05)",
+          "oklch(83.57% 0.03778 30.05)",
+          "oklch(95.00% 0.03778 30.05)"
+        ]
+      },
+      "edition-line": {
+        "role": "neutral",
+        "displayName": "Edition Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.02643 55.98)",
+          "oklch(26.43% 0.02643 55.98)",
+          "oklch(37.86% 0.02643 55.98)",
+          "oklch(49.29% 0.02643 55.98)",
+          "oklch(60.71% 0.02643 55.98)",
+          "oklch(72.14% 0.02643 55.98)",
+          "oklch(83.57% 0.02643 55.98)",
+          "oklch(95.00% 0.02643 55.98)"
+        ]
+      },
+      "edition-accent": {
+        "role": "primary",
+        "displayName": "Edition Accent",
+        "tonalRamp": [
+          "oklch(15.00% 0.15669 21.41)",
+          "oklch(26.43% 0.15669 21.41)",
+          "oklch(37.86% 0.15669 21.41)",
+          "oklch(49.29% 0.15669 21.41)",
+          "oklch(60.71% 0.15669 21.41)",
+          "oklch(72.14% 0.15669 21.41)",
+          "oklch(83.57% 0.15669 21.41)",
+          "oklch(95.00% 0.15669 21.41)"
+        ]
+      },
+      "edition-poster": {
+        "role": "primary",
+        "displayName": "Edition Poster",
+        "tonalRamp": [
+          "oklch(15.00% 0.16171 22.20)",
+          "oklch(26.43% 0.16171 22.20)",
+          "oklch(37.86% 0.16171 22.20)",
+          "oklch(49.29% 0.16171 22.20)",
+          "oklch(60.71% 0.16171 22.20)",
+          "oklch(72.14% 0.16171 22.20)",
+          "oklch(83.57% 0.16171 22.20)",
+          "oklch(95.00% 0.16171 22.20)"
+        ]
+      },
+      "edition-poster-ink": {
+        "role": "neutral",
+        "displayName": "Edition Poster Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.02790 81.47)",
+          "oklch(26.43% 0.02790 81.47)",
+          "oklch(37.86% 0.02790 81.47)",
+          "oklch(49.29% 0.02790 81.47)",
+          "oklch(60.71% 0.02790 81.47)",
+          "oklch(72.14% 0.02790 81.47)",
+          "oklch(83.57% 0.02790 81.47)",
+          "oklch(95.00% 0.02790 81.47)"
+        ]
+      },
+      "edition-poster-hover": {
+        "role": "neutral",
+        "displayName": "Edition Poster Hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.13755 20.41)",
+          "oklch(26.43% 0.13755 20.41)",
+          "oklch(37.86% 0.13755 20.41)",
+          "oklch(49.29% 0.13755 20.41)",
+          "oklch(60.71% 0.13755 20.41)",
+          "oklch(72.14% 0.13755 20.41)",
+          "oklch(83.57% 0.13755 20.41)",
+          "oklch(95.00% 0.13755 20.41)"
+        ]
+      },
+      "orbit-ground": {
+        "role": "neutral",
+        "displayName": "Orbit Ground",
+        "tonalRamp": [
+          "oklch(15.00% 0.02135 337.91)",
+          "oklch(26.43% 0.02135 337.91)",
+          "oklch(37.86% 0.02135 337.91)",
+          "oklch(49.29% 0.02135 337.91)",
+          "oklch(60.71% 0.02135 337.91)",
+          "oklch(72.14% 0.02135 337.91)",
+          "oklch(83.57% 0.02135 337.91)",
+          "oklch(95.00% 0.02135 337.91)"
+        ]
+      },
+      "orbit-ink": {
+        "role": "neutral",
+        "displayName": "Orbit Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.02292 61.23)",
+          "oklch(26.43% 0.02292 61.23)",
+          "oklch(37.86% 0.02292 61.23)",
+          "oklch(49.29% 0.02292 61.23)",
+          "oklch(60.71% 0.02292 61.23)",
+          "oklch(72.14% 0.02292 61.23)",
+          "oklch(83.57% 0.02292 61.23)",
+          "oklch(95.00% 0.02292 61.23)"
+        ]
+      },
+      "orbit-muted": {
+        "role": "neutral",
+        "displayName": "Orbit Muted",
+        "tonalRamp": [
+          "oklch(15.00% 0.03206 351.79)",
+          "oklch(26.43% 0.03206 351.79)",
+          "oklch(37.86% 0.03206 351.79)",
+          "oklch(49.29% 0.03206 351.79)",
+          "oklch(60.71% 0.03206 351.79)",
+          "oklch(72.14% 0.03206 351.79)",
+          "oklch(83.57% 0.03206 351.79)",
+          "oklch(95.00% 0.03206 351.79)"
+        ]
+      },
+      "orbit-line": {
+        "role": "neutral",
+        "displayName": "Orbit Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.05292 353.71)",
+          "oklch(26.43% 0.05292 353.71)",
+          "oklch(37.86% 0.05292 353.71)",
+          "oklch(49.29% 0.05292 353.71)",
+          "oklch(60.71% 0.05292 353.71)",
+          "oklch(72.14% 0.05292 353.71)",
+          "oklch(83.57% 0.05292 353.71)",
+          "oklch(95.00% 0.05292 353.71)"
+        ]
+      },
+      "orbit-accent": {
+        "role": "primary",
+        "displayName": "Orbit Accent",
+        "tonalRamp": [
+          "oklch(15.00% 0.11537 11.40)",
+          "oklch(26.43% 0.11537 11.40)",
+          "oklch(37.86% 0.11537 11.40)",
+          "oklch(49.29% 0.11537 11.40)",
+          "oklch(60.71% 0.11537 11.40)",
+          "oklch(72.14% 0.11537 11.40)",
+          "oklch(83.57% 0.11537 11.40)",
+          "oklch(95.00% 0.11537 11.40)"
+        ]
+      },
+      "orbit-selected": {
+        "role": "neutral",
+        "displayName": "Orbit Selected",
+        "tonalRamp": [
+          "oklch(15.00% 0.02667 41.11)",
+          "oklch(26.43% 0.02667 41.11)",
+          "oklch(37.86% 0.02667 41.11)",
+          "oklch(49.29% 0.02667 41.11)",
+          "oklch(60.71% 0.02667 41.11)",
+          "oklch(72.14% 0.02667 41.11)",
+          "oklch(83.57% 0.02667 41.11)",
+          "oklch(95.00% 0.02667 41.11)"
+        ]
+      },
+      "orbit-selected-ink": {
+        "role": "neutral",
+        "displayName": "Orbit Selected Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.04944 347.06)",
+          "oklch(26.43% 0.04944 347.06)",
+          "oklch(37.86% 0.04944 347.06)",
+          "oklch(49.29% 0.04944 347.06)",
+          "oklch(60.71% 0.04944 347.06)",
+          "oklch(72.14% 0.04944 347.06)",
+          "oklch(83.57% 0.04944 347.06)",
+          "oklch(95.00% 0.04944 347.06)"
+        ]
+      },
+      "studio-ground": {
+        "role": "primary",
+        "displayName": "Studio Ground",
+        "tonalRamp": [
+          "oklch(15.00% 0.18996 27.67)",
+          "oklch(26.43% 0.18996 27.67)",
+          "oklch(37.86% 0.18996 27.67)",
+          "oklch(49.29% 0.18996 27.67)",
+          "oklch(60.71% 0.18996 27.67)",
+          "oklch(72.14% 0.18996 27.67)",
+          "oklch(83.57% 0.18996 27.67)",
+          "oklch(95.00% 0.18996 27.67)"
+        ]
+      },
+      "studio-ink": {
+        "role": "neutral",
+        "displayName": "Studio Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.03464 14.15)",
+          "oklch(26.43% 0.03464 14.15)",
+          "oklch(37.86% 0.03464 14.15)",
+          "oklch(49.29% 0.03464 14.15)",
+          "oklch(60.71% 0.03464 14.15)",
+          "oklch(72.14% 0.03464 14.15)",
+          "oklch(83.57% 0.03464 14.15)",
+          "oklch(95.00% 0.03464 14.15)"
+        ]
+      },
+      "studio-line": {
+        "role": "neutral",
+        "displayName": "Studio Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.15098 25.14)",
+          "oklch(26.43% 0.15098 25.14)",
+          "oklch(37.86% 0.15098 25.14)",
+          "oklch(49.29% 0.15098 25.14)",
+          "oklch(60.71% 0.15098 25.14)",
+          "oklch(72.14% 0.15098 25.14)",
+          "oklch(83.57% 0.15098 25.14)",
+          "oklch(95.00% 0.15098 25.14)"
+        ]
+      },
+      "studio-accent": {
+        "role": "primary",
+        "displayName": "Studio Accent",
+        "tonalRamp": [
+          "oklch(15.00% 0.03848 80.02)",
+          "oklch(26.43% 0.03848 80.02)",
+          "oklch(37.86% 0.03848 80.02)",
+          "oklch(49.29% 0.03848 80.02)",
+          "oklch(60.71% 0.03848 80.02)",
+          "oklch(72.14% 0.03848 80.02)",
+          "oklch(83.57% 0.03848 80.02)",
+          "oklch(95.00% 0.03848 80.02)"
+        ]
+      },
+      "studio-wine": {
+        "role": "neutral",
+        "displayName": "Studio Wine",
+        "tonalRamp": [
+          "oklch(15.00% 0.07547 6.41)",
+          "oklch(26.43% 0.07547 6.41)",
+          "oklch(37.86% 0.07547 6.41)",
+          "oklch(49.29% 0.07547 6.41)",
+          "oklch(60.71% 0.07547 6.41)",
+          "oklch(72.14% 0.07547 6.41)",
+          "oklch(83.57% 0.07547 6.41)",
+          "oklch(95.00% 0.07547 6.41)"
+        ]
+      },
+      "studio-ticket": {
+        "role": "neutral",
+        "displayName": "Studio Ticket",
+        "tonalRamp": [
+          "oklch(15.00% 0.03309 83.71)",
+          "oklch(26.43% 0.03309 83.71)",
+          "oklch(37.86% 0.03309 83.71)",
+          "oklch(49.29% 0.03309 83.71)",
+          "oklch(60.71% 0.03309 83.71)",
+          "oklch(72.14% 0.03309 83.71)",
+          "oklch(83.57% 0.03309 83.71)",
+          "oklch(95.00% 0.03309 83.71)"
+        ]
+      },
+      "studio-ticket-ink": {
+        "role": "neutral",
+        "displayName": "Studio Ticket Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.08815 16.55)",
+          "oklch(26.43% 0.08815 16.55)",
+          "oklch(37.86% 0.08815 16.55)",
+          "oklch(49.29% 0.08815 16.55)",
+          "oklch(60.71% 0.08815 16.55)",
+          "oklch(72.14% 0.08815 16.55)",
+          "oklch(83.57% 0.08815 16.55)",
+          "oklch(95.00% 0.08815 16.55)"
+        ]
+      },
+      "invitation-ground": {
+        "role": "neutral",
+        "displayName": "Invitation Ground",
+        "tonalRamp": [
+          "oklch(15.00% 0.02171 83.26)",
+          "oklch(26.43% 0.02171 83.26)",
+          "oklch(37.86% 0.02171 83.26)",
+          "oklch(49.29% 0.02171 83.26)",
+          "oklch(60.71% 0.02171 83.26)",
+          "oklch(72.14% 0.02171 83.26)",
+          "oklch(83.57% 0.02171 83.26)",
+          "oklch(95.00% 0.02171 83.26)"
+        ]
+      },
+      "invitation-ink": {
+        "role": "neutral",
+        "displayName": "Invitation Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.06807 9.08)",
+          "oklch(26.43% 0.06807 9.08)",
+          "oklch(37.86% 0.06807 9.08)",
+          "oklch(49.29% 0.06807 9.08)",
+          "oklch(60.71% 0.06807 9.08)",
+          "oklch(72.14% 0.06807 9.08)",
+          "oklch(83.57% 0.06807 9.08)",
+          "oklch(95.00% 0.06807 9.08)"
+        ]
+      },
+      "invitation-muted": {
+        "role": "neutral",
+        "displayName": "Invitation Muted",
+        "tonalRamp": [
+          "oklch(15.00% 0.04269 28.72)",
+          "oklch(26.43% 0.04269 28.72)",
+          "oklch(37.86% 0.04269 28.72)",
+          "oklch(49.29% 0.04269 28.72)",
+          "oklch(60.71% 0.04269 28.72)",
+          "oklch(72.14% 0.04269 28.72)",
+          "oklch(83.57% 0.04269 28.72)",
+          "oklch(95.00% 0.04269 28.72)"
+        ]
+      },
+      "invitation-line": {
+        "role": "neutral",
+        "displayName": "Invitation Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.03081 55.91)",
+          "oklch(26.43% 0.03081 55.91)",
+          "oklch(37.86% 0.03081 55.91)",
+          "oklch(49.29% 0.03081 55.91)",
+          "oklch(60.71% 0.03081 55.91)",
+          "oklch(72.14% 0.03081 55.91)",
+          "oklch(83.57% 0.03081 55.91)",
+          "oklch(95.00% 0.03081 55.91)"
+        ]
+      },
+      "invitation-accent": {
+        "role": "primary",
+        "displayName": "Invitation Accent",
+        "tonalRamp": [
+          "oklch(15.00% 0.14985 16.32)",
+          "oklch(26.43% 0.14985 16.32)",
+          "oklch(37.86% 0.14985 16.32)",
+          "oklch(49.29% 0.14985 16.32)",
+          "oklch(60.71% 0.14985 16.32)",
+          "oklch(72.14% 0.14985 16.32)",
+          "oklch(83.57% 0.14985 16.32)",
+          "oklch(95.00% 0.14985 16.32)"
+        ]
+      },
+      "invitation-button-hover": {
+        "role": "neutral",
+        "displayName": "Invitation Button Hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.13690 14.13)",
+          "oklch(26.43% 0.13690 14.13)",
+          "oklch(37.86% 0.13690 14.13)",
+          "oklch(49.29% 0.13690 14.13)",
+          "oklch(60.71% 0.13690 14.13)",
+          "oklch(72.14% 0.13690 14.13)",
+          "oklch(83.57% 0.13690 14.13)",
+          "oklch(95.00% 0.13690 14.13)"
+        ]
+      },
+      "invitation-panel": {
+        "role": "primary",
+        "displayName": "Invitation Panel",
+        "tonalRamp": [
+          "oklch(15.00% 0.06434 1.52)",
+          "oklch(26.43% 0.06434 1.52)",
+          "oklch(37.86% 0.06434 1.52)",
+          "oklch(49.29% 0.06434 1.52)",
+          "oklch(60.71% 0.06434 1.52)",
+          "oklch(72.14% 0.06434 1.52)",
+          "oklch(83.57% 0.06434 1.52)",
+          "oklch(95.00% 0.06434 1.52)"
+        ]
+      },
+      "invitation-panel-ink": {
+        "role": "neutral",
+        "displayName": "Invitation Panel Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.03673 70.00)",
+          "oklch(26.43% 0.03673 70.00)",
+          "oklch(37.86% 0.03673 70.00)",
+          "oklch(49.29% 0.03673 70.00)",
+          "oklch(60.71% 0.03673 70.00)",
+          "oklch(72.14% 0.03673 70.00)",
+          "oklch(83.57% 0.03673 70.00)",
+          "oklch(95.00% 0.03673 70.00)"
+        ]
+      },
+      "navigator-ground": {
+        "role": "neutral",
+        "displayName": "Navigator Ground",
+        "tonalRamp": [
+          "oklch(15.00% 0.01842 347.22)",
+          "oklch(26.43% 0.01842 347.22)",
+          "oklch(37.86% 0.01842 347.22)",
+          "oklch(49.29% 0.01842 347.22)",
+          "oklch(60.71% 0.01842 347.22)",
+          "oklch(72.14% 0.01842 347.22)",
+          "oklch(83.57% 0.01842 347.22)",
+          "oklch(95.00% 0.01842 347.22)"
+        ]
+      },
+      "navigator-opaque": {
+        "role": "neutral",
+        "displayName": "Navigator Opaque",
+        "tonalRamp": [
+          "oklch(15.00% 0.01842 347.22)",
+          "oklch(26.43% 0.01842 347.22)",
+          "oklch(37.86% 0.01842 347.22)",
+          "oklch(49.29% 0.01842 347.22)",
+          "oklch(60.71% 0.01842 347.22)",
+          "oklch(72.14% 0.01842 347.22)",
+          "oklch(83.57% 0.01842 347.22)",
+          "oklch(95.00% 0.01842 347.22)"
+        ]
+      },
+      "navigator-ink": {
+        "role": "neutral",
+        "displayName": "Navigator Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.02084 79.10)",
+          "oklch(26.43% 0.02084 79.10)",
+          "oklch(37.86% 0.02084 79.10)",
+          "oklch(49.29% 0.02084 79.10)",
+          "oklch(60.71% 0.02084 79.10)",
+          "oklch(72.14% 0.02084 79.10)",
+          "oklch(83.57% 0.02084 79.10)",
+          "oklch(95.00% 0.02084 79.10)"
+        ]
+      },
+      "navigator-muted": {
+        "role": "neutral",
+        "displayName": "Navigator Muted",
+        "tonalRamp": [
+          "oklch(15.00% 0.01948 347.56)",
+          "oklch(26.43% 0.01948 347.56)",
+          "oklch(37.86% 0.01948 347.56)",
+          "oklch(49.29% 0.01948 347.56)",
+          "oklch(60.71% 0.01948 347.56)",
+          "oklch(72.14% 0.01948 347.56)",
+          "oklch(83.57% 0.01948 347.56)",
+          "oklch(95.00% 0.01948 347.56)"
+        ]
+      },
+      "navigator-line": {
+        "role": "neutral",
+        "displayName": "Navigator Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 89.88)",
+          "oklch(26.43% 0.00000 89.88)",
+          "oklch(37.86% 0.00000 89.88)",
+          "oklch(49.29% 0.00000 89.88)",
+          "oklch(60.71% 0.00000 89.88)",
+          "oklch(72.14% 0.00000 89.88)",
+          "oklch(83.57% 0.00000 89.88)",
+          "oklch(95.00% 0.00000 89.88)"
+        ]
+      },
+      "navigator-hover": {
+        "role": "neutral",
+        "displayName": "Navigator Hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 89.88)",
+          "oklch(26.43% 0.00000 89.88)",
+          "oklch(37.86% 0.00000 89.88)",
+          "oklch(49.29% 0.00000 89.88)",
+          "oklch(60.71% 0.00000 89.88)",
+          "oklch(72.14% 0.00000 89.88)",
+          "oklch(83.57% 0.00000 89.88)",
+          "oklch(95.00% 0.00000 89.88)"
+        ]
+      },
+      "navigator-selected": {
+        "role": "neutral",
+        "displayName": "Navigator Selected",
+        "tonalRamp": [
+          "oklch(15.00% 0.02044 74.66)",
+          "oklch(26.43% 0.02044 74.66)",
+          "oklch(37.86% 0.02044 74.66)",
+          "oklch(49.29% 0.02044 74.66)",
+          "oklch(60.71% 0.02044 74.66)",
+          "oklch(72.14% 0.02044 74.66)",
+          "oklch(83.57% 0.02044 74.66)",
+          "oklch(95.00% 0.02044 74.66)"
+        ]
+      },
+      "navigator-selected-ink": {
+        "role": "neutral",
+        "displayName": "Navigator Selected Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.05389 358.18)",
+          "oklch(26.43% 0.05389 358.18)",
+          "oklch(37.86% 0.05389 358.18)",
+          "oklch(49.29% 0.05389 358.18)",
+          "oklch(60.71% 0.05389 358.18)",
+          "oklch(72.14% 0.05389 358.18)",
+          "oklch(83.57% 0.05389 358.18)",
+          "oklch(95.00% 0.05389 358.18)"
+        ]
+      },
+      "navigator-selected-number": {
+        "role": "neutral",
+        "displayName": "Navigator Selected Number",
+        "tonalRamp": [
+          "oklch(15.00% 0.06887 358.59)",
+          "oklch(26.43% 0.06887 358.59)",
+          "oklch(37.86% 0.06887 358.59)",
+          "oklch(49.29% 0.06887 358.59)",
+          "oklch(60.71% 0.06887 358.59)",
+          "oklch(72.14% 0.06887 358.59)",
+          "oklch(83.57% 0.06887 358.59)",
+          "oklch(95.00% 0.06887 358.59)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display-signal": {
+        "displayName": "Signal display",
+        "purpose": "DM Sans cinematic hero."
+      },
+      "display-edition": {
+        "displayName": "Edition display",
+        "purpose": "Instrument Serif editorial hero."
+      },
+      "display-orbit": {
+        "displayName": "Orbit display",
+        "purpose": "Space Grotesk atlas hero."
+      },
+      "display-studio": {
+        "displayName": "Studio display",
+        "purpose": "Heavy Space Grotesk campaign hero with serif emphasis."
+      },
+      "display-invitation": {
+        "displayName": "Invitation display",
+        "purpose": "Instrument Serif invitation-panel hero."
+      },
+      "headline": {
+        "displayName": "Shared headline",
+        "purpose": "Default section heading; each world overrides where implemented."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Root prose foundation; reading passages use the implemented local size and measure."
+      },
+      "label": {
+        "displayName": "Navigation label",
+        "purpose": "Default header page-link type."
+      },
+      "wordmark": {
+        "displayName": "MIBC wordmark",
+        "purpose": "Local Space Grotesk text identity."
+      }
+    },
+    "shadows": [
+      {
+        "name": "navigator-ambient",
+        "value": "0 8px 30px #0003",
+        "purpose": "Shared fixed layout navigator."
+      },
+      {
+        "name": "paper-artifact",
+        "value": "4px 14px 24px #7b25252b",
+        "purpose": "Studio ticket and note only."
+      },
+      {
+        "name": "studio-track-paper",
+        "value": "0 14px 24px #4b1a271c",
+        "purpose": "Paper depth on Studio weekly track sheets."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-response",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "Shared transform response, image entrance, poster and prose reveal."
+      },
+      {
+        "name": "control-state",
+        "value": ".2s",
+        "purpose": "Link/button/summary color, background and press transforms; plus-stroke collapse."
+      },
+      {
+        "name": "press-scale",
+        "value": "scale(.97)",
+        "purpose": "Active links and buttons."
+      },
+      {
+        "name": "button-arrow",
+        "value": ".3s; translate(2px,-2px)",
+        "purpose": "Application-button arrow hover response."
+      },
+      {
+        "name": "knot-arrival",
+        "value": "1.2s; opacity 0→1; translateY(24px)→0; rotate(-9deg)→0; scale(.94)→1",
+        "purpose": "One finite Signal sculpture entrance."
+      },
+      {
+        "name": "prose-reveal",
+        "value": "600ms; opacity .45→1; translateY(22px)→0; threshold .3",
+        "purpose": "IntersectionObserver reveals each marked passage once; content is never pre-hidden."
+      },
+      {
+        "name": "poster-response",
+        "value": ".3s; rotate(-1deg)",
+        "purpose": "Edition poster hover darkening and tilt."
+      },
+      {
+        "name": "poster-change",
+        "value": ".4s; opacity .4→1; translateY(8px)→0",
+        "purpose": "Edition poster message entrance after activation."
+      },
+      {
+        "name": "globe-drag",
+        "value": ".008 radians per pixel",
+        "purpose": "Horizontal pointer movement; canvas touch-action is pan-y."
+      },
+      {
+        "name": "globe-release",
+        "value": "stiffness 100; damping 20; max travel ±1.2 radians; dt ≤.032s; settle .002",
+        "purpose": "Bounded damped release response; canceled by a new drag. No idle rotation."
+      },
+      {
+        "name": "scroll-scenes",
+        "value": "progress 0–1; smoothing 85ms; visibility margin 80px",
+        "purpose": "Native scroll controls visible scenes; updates settle and sleep until new input. Signal sculpture shifts vertically with rotating geometry and alternating manifesto text; Edition hinges its poster at the left edge; Studio rotates paper in opposing directions and reverses its horizontal ticker with scroll direction; Invitation rotates seal geometry and subtly scales its lettering."
+      },
+      {
+        "name": "globe-scroll",
+        "value": "(progress − .42) × 3π radians; smoothing 95ms; settle .001",
+        "purpose": "Visible globe rotation, changing tilt and a bright traveller along an inclined orbit follow native scroll, layered with direct drag yaw. No idle rotation."
+      },
+      {
+        "name": "invitation-stamp",
+        "value": "650ms; scale 1.65→.94→1; rotate(-24deg)→3deg→0; opacity 0→1; threshold .3",
+        "purpose": "The closing seal stamps into place once when it enters view; content remains visible without JavaScript."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Transitions/animations become .01ms; smooth scrolling becomes auto; knot, scroll-scene transforms, closing-seal stamp, prose reveals, poster tilt, globe scroll rotation and release inertia are skipped. Direct globe drag and arrow controls remain available."
+      },
+      {
+        "name": "reduced-transparency",
+        "value": "prefers-reduced-transparency: reduce",
+        "purpose": "Navigator uses its opaque ground and no backdrop blur."
+      },
+      {
+        "name": "club-program-scenes",
+        "value": "--scene (0–1), supplied by PageMotion",
+        "purpose": "Desktop native-scroll fanning for Signal/Studio tracks, perspective turns for Edition, vertical track shifts for Orbit, seasonal geometry rotation, and small alternating Studio event-title shifts. At widths up to 760px, PageMotion enables mobile-stack only when viewport height is at least 650px and every sheet is shorter than viewport height minus 150px: sticky offsets 20/40/60px, 24vh gaps, and preceding-sheet scale 1→.935 as the next sheet approaches, reversing with upward scroll. Edition and Orbit sheets are opaque; focus-within brings a sheet forward at full scale. Short viewports and taller content retain normal flow. Phone event headings translate from alternating 42/-32px offsets, rotate from ±5deg and scale .88→1; rule traces and asterisk travel follow arrival progress. Reduced motion and the default presentation remain static and visible."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-min",
+        "value": "1600px"
+      },
+      {
+        "name": "compact-desktop-max",
+        "value": "1100px"
+      },
+      {
+        "name": "mobile-max",
+        "value": "760px"
+      },
+      {
+        "name": "narrow-mobile-max",
+        "value": "380px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Signal application button",
+      "kind": "button",
+      "refersTo": "button-signal",
+      "description": "The implemented Signal ApplyLink, linking to the configured Google Forms placeholder.",
+      "html": "<a class=\"ds-button-signal\" href=\"https://forms.google.com\">Find your people<svg aria-hidden=\"true\" class=\"ds-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a>",
+      "css": ".ds-button-signal { display:inline-flex; min-height:54px; align-items:center; justify-content:center; gap:2.4rem; padding:1rem 1.4rem; border:0; border-radius:3rem; background:#f5efdf; color:#250a12; font-family:\"DM Sans Variable\",sans-serif; font-size:.85rem; font-weight:600; text-decoration:none; cursor:pointer; transition:color .2s,background-color .2s,transform .2s cubic-bezier(.16,1,.3,1); } .ds-button-signal:hover { background:#ef777e; color:#250a12; } .ds-button-signal:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-button-signal:active { transform:scale(.97); } .ds-button-signal .ds-arrow { display:block; flex-shrink:0; width:1.1rem; height:1.1rem; transition:transform .3s cubic-bezier(.16,1,.3,1); } .ds-button-signal:hover .ds-arrow { transform:translate(2px,-2px); } @media(prefers-reduced-motion:reduce) { .ds-button-signal,.ds-button-signal .ds-arrow { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Edition application button",
+      "kind": "button",
+      "refersTo": "button-edition",
+      "description": "The implemented Edition ApplyLink, linking to the configured Google Forms placeholder.",
+      "html": "<a class=\"ds-button-edition\" href=\"https://forms.google.com\">Be part of the story<svg aria-hidden=\"true\" class=\"ds-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a>",
+      "css": ".ds-button-edition { display:inline-flex; min-height:54px; align-items:center; justify-content:center; gap:2.4rem; padding:1rem 1.4rem; border:0; border-radius:0; background:#442021; color:#f3eee2; font-family:\"DM Sans Variable\",sans-serif; font-size:.85rem; font-weight:600; text-decoration:none; cursor:pointer; transition:color .2s,background-color .2s,transform .2s cubic-bezier(.16,1,.3,1); } .ds-button-edition:hover { background:#a52c35; color:#f3eee2; } .ds-button-edition:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-button-edition:active { transform:scale(.97); } .ds-button-edition .ds-arrow { display:block; flex-shrink:0; width:1.1rem; height:1.1rem; transition:transform .3s cubic-bezier(.16,1,.3,1); } .ds-button-edition:hover .ds-arrow { transform:translate(2px,-2px); } @media(prefers-reduced-motion:reduce) { .ds-button-edition,.ds-button-edition .ds-arrow { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Orbit application button",
+      "kind": "button",
+      "refersTo": "button-orbit",
+      "description": "The implemented Orbit ApplyLink, linking to the configured Google Forms placeholder.",
+      "html": "<a class=\"ds-button-orbit\" href=\"https://forms.google.com\">Step into your next orbit<svg aria-hidden=\"true\" class=\"ds-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a>",
+      "css": ".ds-button-orbit { display:inline-flex; min-height:54px; align-items:center; justify-content:center; gap:2.4rem; padding:1rem 1.4rem; border:0; border-radius:.3rem; background:#f8e9dd; color:#190f16; font-family:\"DM Sans Variable\",sans-serif; font-size:.85rem; font-weight:600; text-decoration:none; cursor:pointer; transition:color .2s,background-color .2s,transform .2s cubic-bezier(.16,1,.3,1); } .ds-button-orbit:hover { background:#e78996; color:#190f16; } .ds-button-orbit:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-button-orbit:active { transform:scale(.97); } .ds-button-orbit .ds-arrow { display:block; flex-shrink:0; width:1.1rem; height:1.1rem; transition:transform .3s cubic-bezier(.16,1,.3,1); } .ds-button-orbit:hover .ds-arrow { transform:translate(2px,-2px); } @media(prefers-reduced-motion:reduce) { .ds-button-orbit,.ds-button-orbit .ds-arrow { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Studio application button",
+      "kind": "button",
+      "refersTo": "button-studio",
+      "description": "The implemented Studio ApplyLink, linking to the configured Google Forms placeholder.",
+      "html": "<a class=\"ds-button-studio\" href=\"https://forms.google.com\">Find your kind of people<svg aria-hidden=\"true\" class=\"ds-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a>",
+      "css": ".ds-button-studio { display:inline-flex; min-height:54px; align-items:center; justify-content:center; gap:2.4rem; padding:1rem 1.4rem; border:0; border-radius:0; background:#291416; color:#f7e7cd; font-family:\"Space Grotesk Variable\",sans-serif; font-size:.85rem; font-weight:600; text-decoration:none; cursor:pointer; transition:color .2s,background-color .2s,transform .2s cubic-bezier(.16,1,.3,1); } .ds-button-studio:hover { background:#f7e7cd; color:#291416; } .ds-button-studio:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-button-studio:active { transform:scale(.97); } .ds-button-studio .ds-arrow { display:block; flex-shrink:0; width:1.1rem; height:1.1rem; transition:transform .3s cubic-bezier(.16,1,.3,1); } .ds-button-studio:hover .ds-arrow { transform:translate(2px,-2px); } @media(prefers-reduced-motion:reduce) { .ds-button-studio,.ds-button-studio .ds-arrow { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Invitation application button",
+      "kind": "button",
+      "refersTo": "button-invitation",
+      "description": "The implemented Invitation ApplyLink, linking to the configured Google Forms placeholder.",
+      "html": "<a class=\"ds-button-invitation\" href=\"https://forms.google.com\">Accept your invitation<svg aria-hidden=\"true\" class=\"ds-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a>",
+      "css": ".ds-button-invitation { display:inline-flex; min-height:54px; align-items:center; justify-content:center; gap:1.5rem; padding:1rem 1.4rem; border:0; border-radius:.15rem; background:#50232c; color:#f4ecdd; font-family:\"DM Sans Variable\",sans-serif; font-size:.78rem; font-weight:600; text-decoration:none; cursor:pointer; transition:color .2s,background-color .2s,transform .2s cubic-bezier(.16,1,.3,1); } .ds-button-invitation:hover { background:#9c3546; color:#f4ecdd; } .ds-button-invitation:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-button-invitation:active { transform:scale(.97); } .ds-button-invitation .ds-arrow { display:block; flex-shrink:0; width:1.1rem; height:1.1rem; transition:transform .3s cubic-bezier(.16,1,.3,1); } .ds-button-invitation:hover .ds-arrow { transform:translate(2px,-2px); } @media(prefers-reduced-motion:reduce) { .ds-button-invitation,.ds-button-invitation .ds-arrow { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Five-world navigator",
+      "kind": "nav",
+      "refersTo": "layout-navigator",
+      "description": "Inline specimen of the shared fixed-bottom navigator; the application supplies viewport positioning and current-route selection.",
+      "html": "<nav class=\"ds-concept-nav\" aria-label=\"Explore the five landing page layouts\"><span class=\"ds-concept-label\">The layouts</span><div class=\"ds-concept-links\"><a class=\"ds-concept-link ds-active\" href=\"/\" aria-label=\"Layout 01: Signal\" aria-current=\"page\"><span>01</span><span class=\"ds-concept-name\">Signal</span></a><a class=\"ds-concept-link\" href=\"/edition/\" aria-label=\"Layout 02: Edition\"><span>02</span><span class=\"ds-concept-name\">Edition</span></a><a class=\"ds-concept-link\" href=\"/orbit/\" aria-label=\"Layout 03: Orbit\"><span>03</span><span class=\"ds-concept-name\">Orbit</span></a><a class=\"ds-concept-link\" href=\"/studio/\" aria-label=\"Layout 04: Studio\"><span>04</span><span class=\"ds-concept-name\">Studio</span></a><a class=\"ds-concept-link\" href=\"/invitation/\" aria-label=\"Layout 05: Invitation\"><span>05</span><span class=\"ds-concept-name\">Invitation</span></a></div></nav>",
+      "css": ".ds-concept-nav { display:inline-flex; align-items:center; gap:1rem; padding:.4rem .4rem .4rem 1rem; border:1px solid #ffffff2b; background:#21171ce8; color:#fff6e8; border-radius:3rem; box-shadow:0 8px 30px #0003; backdrop-filter:blur(16px); max-width:calc(100vw - 1.5rem); font-family:\"DM Sans Variable\",sans-serif; } .ds-concept-label { font-size:.64rem; color:#c7b8bf; white-space:nowrap; } .ds-concept-links { display:flex; gap:.2rem; } .ds-concept-link { display:flex; gap:.4rem; align-items:center; padding:.7rem .85rem; font-size:.67rem; border-radius:2rem; white-space:nowrap; min-height:40px; color:inherit; text-decoration:none; transition:background-color .2s,transform .2s cubic-bezier(.16,1,.3,1); } .ds-concept-link>span:first-child { font-variant-numeric:tabular-nums; font-size:.6rem; color:#c7b8bf; } .ds-concept-link:hover { background:#ffffff15; } .ds-concept-link.ds-active { background:#f4eadd; color:#341420; } .ds-concept-link.ds-active>span:first-child { color:#6d3e4e; } .ds-concept-link:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-concept-link:active { transform:scale(.97); } @media(max-width:760px) { .ds-concept-nav { padding-left:.45rem; gap:0; } .ds-concept-label,.ds-concept-name { display:none; } .ds-concept-link { padding:.65rem .8rem; min-height:44px; } .ds-active .ds-concept-name { display:block; } .ds-concept-link>span:first-child { font-size:.7rem; } } @media(max-width:380px) { .ds-concept-link { padding-inline:.65rem; } } @media(prefers-reduced-transparency:reduce) { .ds-concept-nav { background:#21171c; backdrop-filter:none; } } @media(prefers-contrast:more) { .ds-concept-nav { background:#21171c; border-color:#fff6e8; } } @media(prefers-reduced-motion:reduce) { .ds-concept-link { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Native FAQ row",
+      "kind": "custom",
+      "description": "A working native details row using Signal colors; the shared FAQ inherits the active world in the application.",
+      "html": "<div class=\"ds-faq-list\"><details><summary>What if I have no club experience?<span class=\"ds-plus\" aria-hidden=\"true\"></span></summary><p>A first step is still a step. Bring curiosity, a willingness to contribute, and something you would love to learn. Your application is a chance to introduce the person behind the résumé.</p></details></div>",
+      "css": ".ds-faq-list { color:#f5efdf; background:#250a12; font-family:\"DM Sans Variable\",sans-serif; } .ds-faq-list details { border-block:1px solid #60303e; } .ds-faq-list summary { display:flex; justify-content:space-between; align-items:center; gap:1.5rem; font-size:.92rem; min-height:78px; padding-block:1.4rem; list-style:none; cursor:pointer; transition:color .2s; } .ds-faq-list summary::-webkit-details-marker { display:none; } .ds-faq-list summary:hover { color:#ef777e; } .ds-faq-list summary:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-plus { width:.8rem; height:.8rem; position:relative; flex-shrink:0; } .ds-plus::before,.ds-plus::after { content:\"\"; width:.8rem; height:1px; background:currentColor; position:absolute; top:50%; left:0; } .ds-plus::after { transform:rotate(90deg); transition:transform .2s; } .ds-faq-list details[open] .ds-plus::after { transform:rotate(0); } .ds-faq-list details>p { margin:0; color:#c2a8ac; font-size:.86rem; line-height:1.65; padding:0 2rem 1.5rem 0; max-width:65ch; } @media(max-width:760px) { .ds-faq-list summary { font-size:.85rem; min-height:72px; } .ds-faq-list details>p { font-size:.82rem; } } @media(prefers-reduced-motion:reduce) { .ds-faq-list summary,.ds-plus::after { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Edition typographic poster",
+      "kind": "button",
+      "refersTo": "edition-poster",
+      "description": "Initial visual state of Edition’s message-cycling button. The application supplies its scroll-controlled perspective hinge and React message cycle.",
+      "html": "<button class=\"ds-edition-poster\" aria-label=\"Change the poster’s perspective\"><span class=\"ds-poster-top\">A fresh perspective, by MIBC <svg aria-hidden=\"true\" class=\"ds-asterisk\" viewBox=\"0 0 100 100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"10\"><path d=\"M50 0v100M6.7 25l86.6 50M6.7 75l86.6-50\"/></svg></span><span class=\"ds-poster-words\"><span>MAKE</span><span>YOUR</span><span>MARK.</span></span><span class=\"ds-poster-bottom\">Click for a fresh perspective <svg aria-hidden=\"true\" class=\"ds-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></span></button>",
+      "css": ".ds-edition-poster { background:#a62831; color:#f3e8d5; display:flex; flex-direction:column; justify-content:space-between; padding:1.5rem 1.7rem; min-height:450px; width:100%; text-align:left; border:0; font-family:\"DM Sans Variable\",sans-serif; cursor:pointer; transition:background .3s,transform .3s cubic-bezier(.16,1,.3,1); } .ds-edition-poster:hover { transform:rotate(-1deg); background:#88212b; } .ds-edition-poster:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-edition-poster:active { transform:scale(.97); } .ds-poster-top { display:flex; align-items:center; justify-content:space-between; font-size:.6rem; padding-bottom:1.3rem; border-bottom:1px solid #edb2a85c; } .ds-poster-top .ds-asterisk { display:block; width:1.25rem; height:1.25rem; } .ds-poster-words { font-family:\"Space Grotesk Variable\",sans-serif; font-size:clamp(3.5rem,6vw,6.5rem); font-weight:650; letter-spacing:-.04em; line-height:.93; display:flex; flex-direction:column; padding-block:2rem; } .ds-poster-bottom { display:flex; justify-content:space-between; align-items:center; font-size:.58rem; padding-top:1.1rem; border-top:1px solid #edb2a85c; } .ds-poster-bottom .ds-arrow { display:block; width:1.25rem; height:1.25rem; } @media(max-width:1100px) { .ds-edition-poster { min-height:395px; } } @media(max-width:760px) { .ds-edition-poster { min-height:410px; padding:1.6rem; } .ds-poster-words { font-size:clamp(4.7rem,17vw,7rem); } } @media(prefers-reduced-motion:reduce) { .ds-edition-poster { transition-duration:.01ms; } .ds-edition-poster:hover { transform:none; } }"
+    },
+    {
+      "name": "Orbit topic chips",
+      "kind": "chip",
+      "refersTo": "orbit-topic",
+      "description": "The three topic controls with Ideas selected; the application updates aria-pressed and the adjacent polite live region.",
+      "html": "<div class=\"ds-topic-buttons\" role=\"group\" aria-label=\"Explore what connects us\"><button aria-pressed=\"true\">Ideas</button><button aria-pressed=\"false\">People</button><button aria-pressed=\"false\">Possibilities</button></div>",
+      "css": ".ds-topic-buttons { display:flex; gap:.5rem; align-items:center; font-family:\"Space Grotesk Variable\",sans-serif; } .ds-topic-buttons button { padding:.7rem 1rem; border:1px solid #563442; color:#c0a7b1; background:transparent; border-radius:2rem; font-family:inherit; font-size:.7rem; min-height:44px; cursor:pointer; transition:color .2s,background-color .2s,transform .2s cubic-bezier(.16,1,.3,1); } .ds-topic-buttons button[aria-pressed=\"true\"] { background:#f5dfd7; color:#2f1423; border-color:#f5dfd7; } .ds-topic-buttons button:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-topic-buttons button:active { transform:scale(.97); } @media(max-width:760px) { .ds-topic-buttons { justify-content:space-between; } .ds-topic-buttons button { flex-grow:1; font-size:.65rem; padding-inline:.8rem; } } @media(prefers-reduced-motion:reduce) { .ds-topic-buttons button { transition-duration:.01ms; } }"
+    },
+    {
+      "name": "Studio paper ticket",
+      "kind": "card",
+      "refersTo": "studio-ticket",
+      "description": "Resting visual state of the rotated creative artifact, isolated from hero positioning; the application supplies its scroll-controlled rotation and horizontal movement.",
+      "html": "<div class=\"ds-studio-ticket\" aria-hidden=\"true\"><svg aria-hidden=\"true\" class=\"ds-asterisk\" viewBox=\"0 0 100 100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"10\"><path d=\"M50 0v100M6.7 25l86.6 50M6.7 75l86.6-50\"/></svg><span>GOOD IDEAS<br>DON’T GROW<br>ALONE.</span><div class=\"ds-ticket-perf\"></div><span class=\"ds-ticket-caption\">ADMIT ONE CURIOUS MIND</span></div>",
+      "css": ".ds-studio-ticket { background:#f4e8d1; width:65%; min-height:267px; transform:rotate(-11deg); padding:1.6rem; color:#65282e; box-shadow:4px 14px 24px #7b25252b; font-family:\"Space Grotesk Variable\",sans-serif; } .ds-studio-ticket>.ds-asterisk { display:block; width:2rem; height:2rem; margin-bottom:1.3rem; } .ds-studio-ticket>span:not(.ds-ticket-caption) { font-size:clamp(1.3rem,2.25vw,2.1rem); line-height:1; font-weight:650; letter-spacing:-.03em; } .ds-ticket-perf { margin-top:1.5rem; border-top:1px dashed #9b6d69; padding-top:.5rem; } .ds-ticket-caption { font-size:.45rem; letter-spacing:.08em; } @media(max-width:1100px) { .ds-studio-ticket { padding:1.1rem; min-height:230px; } } @media(max-width:760px) { .ds-studio-ticket { width:61%; min-height:230px; padding:1.2rem; } .ds-studio-ticket>span:not(.ds-ticket-caption) { font-size:1.65rem; } } @media(max-width:380px) { .ds-studio-ticket>span:not(.ds-ticket-caption) { font-size:1.4rem; } }"
+    },
+    {
+      "name": "Recruitment steps and MIBC events",
+      "kind": "custom",
+      "description": "Static Signal specimens for the three user-specified recruitment steps and four researched MIBC events. Only Register links to the intentional Google Forms placeholder; appointment and mail guidance are non-interactive. Every event has a source link, with the Amelior PDF identified. Mobile body text is 16px, panels stay unrotated, and action targets grow from 44px to 48px. Application code supplies route variants and scroll motion.",
+      "html": "<div class=\"ds-program\"><div class=\"ds-spread\"><article class=\"ds-track ds-track-0\"><div class=\"ds-schedule\">Step 01</div><h3>Register</h3><p>Tell us who you are, what interests you, and what you’d like to explore at MIBC. Use an email address you check regularly so you don’t miss the next step.</p><a href=\"https://forms.google.com\">Start your application<svg aria-hidden=\"true\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a><span class=\"ds-fold\" aria-hidden=\"true\"></span></article><article class=\"ds-track ds-track-1\"><div class=\"ds-schedule\">Step 02</div><h3>Book an appointment</h3><p>Follow the booking instructions shared by the recruitment team to choose your appointment. Bring your questions, your interests, and a little curiosity—we want to get to know you.</p><p class=\"ds-next\">Watch for booking instructions</p><span class=\"ds-fold\" aria-hidden=\"true\"></span></article><article class=\"ds-track ds-track-2\"><div class=\"ds-schedule\">Step 03</div><h3>Check your mail</h3><p>Keep an eye on the email address you registered with for your appointment details, recruitment updates, and next steps. Check your spam folder too, just in case.</p><p class=\"ds-next\">Check your inbox and spam folder</p><span class=\"ds-fold\" aria-hidden=\"true\"></span></article></div><article class=\"ds-season\"><div class=\"ds-date\">Digital marketing</div><h3>MarXcellence</h3><p>Turn audience insights into a strategy worth pitching. MIBC’s digital marketing case competition challenges university teams to solve business problems, shape campaigns, and present their ideas to industry professionals.</p><a class=\"ds-source\" href=\"https://marxcellence.com/\">Explore MarXcellence<svg aria-hidden=\"true\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a></article><article class=\"ds-season\"><div class=\"ds-date\">International business</div><h3>Innovade</h3><p>Think across borders. Tackle international business cases, analyze markets, and build practical strategies with your team. Expert-led workshops and competitive presentations connect classroom knowledge with global business decisions.</p><a class=\"ds-source\" href=\"https://nsumibc.org/innovade/\">Explore Innovade<svg aria-hidden=\"true\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a></article><article class=\"ds-season\"><div class=\"ds-date\">Industry insights</div><h3>Amelior</h3><p>Learn from the people doing the work. MIBC’s seminar and skill-development series brings students closer to corporate leaders, with conversations on marketing, sales, international business, and the skills that shape a career.</p><a class=\"ds-source\" href=\"https://www.northsouth.edu/newassets/images/5-3342.Dec2019-Jan%202020.pdf\">Read about Amelior (PDF)<svg aria-hidden=\"true\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a></article><article class=\"ds-season\"><div class=\"ds-date\">Intra-NSU competition</div><h3>Intra-Ignite</h3><p>Put your marketing instincts to the test on your own campus. This MIBC competition brings NSU undergraduates together to solve real-world marketing challenges through creative ideas, strategic thinking, and persuasive presentations.</p><a class=\"ds-source\" href=\"https://nsumibc.org/intra-ignite/\">Explore Intra-Ignite<svg aria-hidden=\"true\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"><path d=\"M5 19 19 5M5 5h14v14\"/></svg></a></article></div>",
+      "css": ".ds-program { background:#250a12; color:#f5efdf; padding:2rem; font-family:\"DM Sans Variable\",sans-serif; line-height:1.65; } .ds-track { position:relative; display:flex; flex-direction:column; min-height:370px; padding:2rem; background:#ead8c5; color:#421723; } .ds-schedule { font-size:.72rem; border-bottom:1px solid currentColor; padding-bottom:1.4rem; } .ds-track h3 { font-size:clamp(1.8rem,3vw,2.75rem); letter-spacing:-.04em; margin:2rem 0 1rem; } .ds-track p { font-size:.88rem; max-width:36ch; margin:0 0 2rem; } .ds-track a { display:flex; justify-content:space-between; align-items:center; margin-top:auto; min-height:44px; font-size:.78rem; color:inherit; text-decoration:underline; text-underline-offset:5px; } .ds-track a:focus-visible { outline:2px solid currentColor; outline-offset:6px; } .ds-track a:active { transform:scale(.97); } .ds-track svg { width:1.1rem; height:1.1rem; } .ds-fold { position:absolute; right:0; top:0; width:22px; height:22px; background:#ffffff38; clip-path:polygon(0 0,100% 100%,100% 0); } .ds-season { margin-top:2rem; padding:2rem 0 1rem; border-top:1px solid #60303e; } .ds-date { display:flex; justify-content:space-between; gap:1rem; color:#c2a8ac; font-size:.75rem; } .ds-season h3 { font-size:clamp(2.3rem,4.6vw,4.5rem); letter-spacing:-.04em; margin:1.4rem 0; } .ds-season p { max-width:55ch; font-size:.92rem; color:#c2a8ac; } @media(max-width:760px) { .ds-track { min-height:0; padding:1.5rem; } .ds-track p { max-width:none; } } .ds-program * { box-sizing:border-box; } .ds-spread { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.5rem; } .ds-track-1 { background:#d49e9f; } .ds-track-2 { background:#823c4c; color:#fff0e1; } .ds-track .ds-next { margin-top:auto; margin-bottom:0; padding-block:.8rem; border-top:1px solid currentColor; } .ds-source { display:inline-flex; align-items:center; gap:.75rem; min-height:44px; margin-top:1rem; font-size:.8rem; color:inherit; text-decoration:underline; text-underline-offset:5px; } .ds-source svg { width:1rem; height:1rem; } .ds-source:focus-visible { outline:2px solid currentColor; outline-offset:6px; } @media(max-width:760px) { .ds-spread { grid-template-columns:1fr; } .ds-track { rotate:none; } .ds-track h3 { font-size:clamp(1.9rem,8vw,2.6rem); } .ds-track p,.ds-season p { font-size:1rem; line-height:1.65; } .ds-schedule,.ds-date { font-size:.8rem; } .ds-track a,.ds-source { min-height:48px; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Beyond the Ordinary",
+    "overview": "The completed system presents MIBC through five distinct recruitment worlds. Burgundy, crimson, warm paper, fine geometric linework, and expressive typography connect them; their compositions and materials stay individual. The voice is curious, creative, ambitious, and welcoming. The title is original proposal copy, not an official event name.\n\nSignal is a cinematic campaign with one sculptural image. Edition is an ivory student publication. Orbit is a dark interactive atlas. Studio is a coral creative canvas. Invitation is a burgundy invitation beside a warm paper letter. All share a readable club identity, clear application action, native scrolling, and restrained feedback. Apple Design and Impeccable inform the physical response, legibility, and finishing restraint already present in the code.",
+    "keyCharacteristics": [
+      "Five distinct page worlds with shared foundations.",
+      "Large balanced headings, serif emphasis, generous margins, and fine rules.",
+      "Geometric linework, asterisks, simple arrows, and one crimson sculpture.",
+      "Direct application actions and native expandable answers.",
+      "Scroll-controlled and finite motion, local assets, and preference-aware presentation."
+    ],
+    "rules": [],
+    "dos": [
+      "**Do** retain each world’s matched palette, typography, composition, and button shape.",
+      "**Do** keep the club identity and application action clear in every world.",
+      "**Do** use fine rules, balanced headings, local fonts, and generous reading space as the common foundation.",
+      "**Do** preserve native details, visible keyboard focus, mobile stacking, and reduced-motion/transparency support.",
+      "**Do** keep motion scroll-controlled or finite and interaction-led, with ordinary content visible before JavaScript runs."
+    ],
+    "donts": [
+      "**Don't** flatten the five worlds into a single burgundy template.",
+      "**Don't** replace the single abstract sculpture with unsupported member photography, testimonials, or invented identity assets.",
+      "**Don't** present the proposal title, unsupplied dates, eligibility, numeric club claims, or endorsements as official facts. Use the researched MIBC event names and evergreen summaries documented in docs/event-sources.md; do not restore outdoor descriptions or seasonal dates.",
+      "**Don't** add dependencies, autoplay media, or continuous background animation to reproduce the completed motion."
+    ]
+  }
+}

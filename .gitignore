@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+.DS_Store
+*.tsbuildinfo
+.impeccable/review/
+.wrangler/
+.dev.vars
+.dev.vars.*
+.env
+.env.*
