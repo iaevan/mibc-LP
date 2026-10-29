@@ -1,0 +1,7 @@
+{
+  "source": "Generated with the built-in image_gen tool; resized and encoded as JPEG with sharp.",
+  "promptFile": "docs/og-image-prompt.txt",
+  "width": 1200,
+  "height": 675,
+  "purpose": "Open Graph and X large-image preview for MIBC Recruitment 10.0"
+}

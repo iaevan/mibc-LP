@@ -1,0 +1,12 @@
+Use case: ads-marketing.
+Create one finished premium Open Graph social sharing poster for the Marketing and International Business Club of North South University (MIBC), recruitment 10.0.
+Format: wide landscape 16:9 composition, designed to be delivered at 1200 x 675 pixels. This is a finished image, not a website screenshot or mockup. Stunning editorial campaign art, clear and powerful even as a small social preview.
+Visual world: very deep oxblood burgundy background (#23090f), warm ivory typography (#f5efdf), crimson ruby highlights, subtle fine geometric orbit linework. A dramatic glossy ruby-red glass ribbon sculpture with three interlocking loops occupies the right-hand half; physically convincing refraction, sharp reflections, sophisticated sculptural lighting, part of it cropped at the right edge. Rich depth, restrained bloom, dark negative space around the type. The object embodies changing dimensions.
+Composition: keep all meaningful text within a generous central safe area at least 85px from every outer edge, including the top and bottom. The image should remain understandable when cropped slightly on social apps. Main heading large and legible, in warm ivory, set across two lines at the left-center: first line a confident contemporary sans serif, second line a beautiful expressive italic editorial serif. The sculpture can pass behind the text but must never interfere with readability. Top left an elegant simple typographic label MIBC RECRUITMENT, top right a large refined 10.0. Fine understated horizontal rules can create structure. Bottom left North South University in small but legible ivory type. This is about a university marketing/business club, not a music concert. 
+Text verbatim, exactly these words and no other words:
+"MIBC RECRUITMENT"
+"10.0"
+"Redefine Your"
+"Dimensions"
+"North South University"
+No dates, no fake sponsors, no buttons, no stock UI, no watermarks. Exact spelling; exceptional typography; high-end launch campaign, tactile red glass, generous breathing room.
