@@ -15,7 +15,7 @@ export function ApplyLink({ children = 'REGISTER NOW', className = '', diagonal 
 }
 
 export function Brand({ compact = false }: { compact?: boolean }) {
-  return <a className={`brand${compact ? ' brand-compact' : ''}`} href="#top" aria-label="MIBC, back to top"><span className="brand-logo"><Image src="/images/mibc-logo.png" alt="Marketing and International Business Club of North South University" width={6250} height={6250} priority={!compact} sizes="280px" /></span></a>;
+  return <a className={`brand${compact ? ' brand-compact' : ''}`} href="#top" aria-label="MIBC, back to top"><span className="brand-logo"><Image src="/images/mibc-logo.webp" alt="Marketing and International Business Club of North South University" width={384} height={275} priority={!compact} sizes="(max-width: 760px) 88px, 112px" /></span></a>;
 }
 
 export function Header({ theme }: { theme: Theme }) {
