@@ -13,16 +13,8 @@ export function PageMotion() {
       if (preference.matches) return;
       const scenes = Array.from(document.querySelectorAll<HTMLElement>('[data-motion]'));
       const visible = new Set<HTMLElement>();
-      const stack = document.querySelector<HTMLElement>('.track-spread');
-      const cards = Array.from(document.querySelectorAll<HTMLElement>('.track-sheet'));
+      const eventScene = document.querySelector<HTMLElement>('.season-collection');
       const events = Array.from(document.querySelectorAll<HTMLElement>('.season-event'));
-      const sizeStack = () => {
-        const fits = innerWidth <= 760 && innerHeight >= 650 && cards.every(card => card.offsetHeight < innerHeight - 150);
-        stack?.classList.toggle('mobile-stack', fits);
-      };
-      sizeStack();
-      const sizes = new ResizeObserver(sizeStack);
-      cards.forEach(card => sizes.observe(card));
       const animations = new Set<Animation>();
       const values = new Map<HTMLElement, number>();
       let frame = 0;
@@ -33,15 +25,9 @@ export function PageMotion() {
         previous = now;
         let unsettled = false;
         const measurements = Array.from(visible, el => ({ el, rect: el.getBoundingClientRect() }));
-        // Read all positions before writing transforms. A card scales back
-        // only when the following card reaches the top of the stack.
-        const cover = stack?.classList.contains('mobile-stack') && visible.has(stack)
-          ? cards.map((card, i) => {
-            const next = cards[i + 1];
-            return { card, value: next ? Math.max(0, Math.min(1, (innerHeight * .68 - next.getBoundingClientRect().top) / (innerHeight * .68 - 90))) : 0 };
-          }) : [];
-        const arrivals = innerWidth <= 760 ? events.map(event => ({ event, value: Math.max(0, Math.min(1, (innerHeight * .9 - event.getBoundingClientRect().top) / (innerHeight * .5))) })) : [];
-        cover.forEach(({ card, value }) => card.style.setProperty('--cover', value.toFixed(4)));
+        // Batch layout reads, and only measure the event section while visible.
+        const arrivals = innerWidth <= 760 && eventScene && visible.has(eventScene)
+          ? events.map(event => ({ event, value: Math.max(0, Math.min(1, (innerHeight * .9 - event.getBoundingClientRect().top) / (innerHeight * .5))) })) : [];
         arrivals.forEach(({ event, value }) => event.style.setProperty('--arrival', value.toFixed(4)));
         for (const { el, rect } of measurements) {
           const target = Math.max(0, Math.min(1, (innerHeight - rect.top) / (innerHeight + rect.height)));
@@ -81,13 +67,9 @@ export function PageMotion() {
       document.querySelectorAll('[data-reveal], .small-seal').forEach(el => reveals.observe(el));
       window.addEventListener('scroll', wake, { passive: true });
       window.addEventListener('resize', wake, { passive: true });
-      window.addEventListener('resize', sizeStack, { passive: true });
       document.addEventListener('visibilitychange', wake);
       cleanup = () => {
-        cancelAnimationFrame(frame); observer.disconnect(); reveals.disconnect(); sizes.disconnect();
-        window.removeEventListener('resize', sizeStack);
-        stack?.classList.remove('mobile-stack');
-        cards.forEach(card => card.style.removeProperty('--cover'));
+        cancelAnimationFrame(frame); observer.disconnect(); reveals.disconnect();
         events.forEach(event => event.style.removeProperty('--arrival'));
         animations.forEach(animation => animation.cancel());
         window.removeEventListener('scroll', wake); window.removeEventListener('resize', wake);

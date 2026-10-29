@@ -14,7 +14,11 @@ Live website: https://nsumibc.online/
 
 The current Recruitment 10.0 page uses `public/og/mibc-recruitment-10-v2.jpg` for Open Graph previews and X's large-image card. The image is a public 1200×630 JPEG with a prominent “Join the recruitment” call to action. `app/layout.tsx` defines the production URL, canonical link, preview title, description, image dimensions, and image alt text. These tags are included in static HTML, so preview crawlers do not need JavaScript.
 
-The generated artwork's exact prompt is in `docs/og-image-v2-prompt.txt`. Keep future image filenames versioned and update both Open Graph and X metadata when replacing the artwork. Social apps cache previews independently; an already-shared URL may need a fresh scrape or platform cache refresh. Search indexing remains disabled while the registration form is a placeholder; `robots.txt` permits fetching the public page and image assets.
+The generated artwork's exact prompt is in `docs/og-image-v2-prompt.txt`. Keep future image filenames versioned and update both Open Graph and X metadata when replacing the artwork. Social apps cache previews independently; an already-shared URL may need a fresh scrape or platform cache refresh. Search indexing is enabled for the production homepage. `robots.txt` permits public assets and points crawlers to the root-only `sitemap.xml`. `lib/site.ts` defines the canonical domain and factual Organization, WebSite, and WebPage structured data. The registration destination in `lib/content.ts` still needs the actual recruitment form URL.
+
+## Production checks
+
+Run `npm run build` before publishing. It automatically runs the site checks; `npm run check:site` reruns them against an existing export. The checks verify indexing, canonical and social URLs, structured data, a single-page sitemap, responsive hero assets, and the noindex error page. The site is statically exported, so content and navigation remain available without JavaScript and no database or application server is involved. Cloudflare serves the files with the caching and security headers in `public/_headers`.
 
 ## Preview the five layouts
 

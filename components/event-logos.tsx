@@ -24,7 +24,7 @@ export function EventLogos() {
     <div className="logo-marquees">
       <div className="logo-marquee">
         <div className="logo-marquee-track">{[0, 1].map(copy => <div className="logo-marquee-group" key={copy} aria-hidden={copy === 1 ? true : undefined}>
-          {logos.map(logo => <div className="marquee-logo" key={logo.file}><Image src={`/images/events/${logo.file}.webp`} alt={`${logo.name} logo`} width={1100} height={500} sizes="(max-width: 760px) 160px, 240px" /></div>)}
+          {logos.map(logo => <div className="marquee-logo" key={logo.file}><Image src={`/images/events/${logo.file}-480.webp`} alt={`${logo.name} logo`} width={480} height={218} sizes="(max-width: 760px) 160px, 240px" /></div>)}
         </div>)}</div>
       </div>
     </div>

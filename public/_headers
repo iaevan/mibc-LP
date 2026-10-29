@@ -7,6 +7,9 @@
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
 /og/*
   Cache-Control: public, max-age=604800
   Content-Disposition: inline

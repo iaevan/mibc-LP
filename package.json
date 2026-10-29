@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
-    "build": "next build",
+    "build": "next build && node scripts/check-site.mjs",
     "start": "serve out -l 3000",
     "typecheck": "tsc --noEmit",
+    "check:site": "node scripts/check-site.mjs",
     "deploy": "npm run build && wrangler deploy --no-autoconfig",
     "cloudflare:dev": "wrangler dev"
   },

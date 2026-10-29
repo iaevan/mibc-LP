@@ -1,3 +1,4 @@
-# Social preview crawlers can fetch the public page and its image assets.
 User-agent: *
 Allow: /
+
+Sitemap: https://nsumibc.online/sitemap.xml
