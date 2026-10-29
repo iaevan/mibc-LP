@@ -4,7 +4,7 @@ import { Shell, ApplyLink, FAQ, Journey, FinalCTA } from '@/components/common';
 import { Globe } from '@/components/globe';
 import { Arrow, Asterisk } from '@/components/icons';
 import { disciplines } from '@/lib/content';
-export const metadata: Metadata = { title: 'Orbit — A bigger world starts here' };
+export const metadata: Metadata = { title: 'Orbit: A bigger world starts here' };
 export default function OrbitPage() {
   return <Shell theme="orbit" active={2}>
     <section className="orbit-hero section-pad"><div className="orbit-heading"><h1>Your campus.<br /><em>A bigger world.</em></h1><div><p>New perspectives. Shared ambition.<br />A whole world of possibilities,<br />starting with MIBC.</p><ApplyLink>Step into your next orbit</ApplyLink></div></div><Globe /><div className="orbit-hero-bottom"><span>Rooted at North South University.<br />Curious about everything beyond it.</span><a href="#about">Make a connection <Arrow /></a></div></section>

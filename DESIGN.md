@@ -1,5 +1,5 @@
 ---
-name: Beyond the Ordinary — MIBC Recruitment
+name: Beyond the Ordinary: MIBC Recruitment
 description: Five recruitment worlds for curious minds at North South University.
 colors:
   signal-ground: "#250a12"
@@ -180,7 +180,7 @@ components:
     padding: "1.6rem"
 ---
 
-# Design System: Beyond the Ordinary — MIBC Recruitment
+# Design System: Beyond the Ordinary: MIBC Recruitment
 
 ## Overview
 
@@ -274,7 +274,7 @@ Journey articles use a top rule, tabular two-digit step, concise title, and supp
 
 ### Recruitment steps and MIBC events
 
-`ClubProgram` follows the hero on Signal, Edition, Orbit, and Studio. Invitation places it first in the paper column beside the invitation panel. Two labelled sections show the user-specified recruitment sequence—Register, Book an appointment, Check your mail—and four researched MIBC events: MarXcellence, Innovade, Amelior, and Intra-Ignite. The event descriptions are evergreen summaries supported by `docs/event-sources.md`; there are no seasonal dates or outdoor-program claims. Hults is not presented as an MIBC event.
+`ClubProgram` follows the hero on Signal, Edition, Orbit, and Studio. Invitation places it first in the paper column beside the invitation panel. Two labelled sections show the user-specified recruitment sequence (Register, Book an appointment, Check your mail) and four researched MIBC events: MarXcellence, Innovade, Amelior, and Intra-Ignite. The event descriptions are evergreen summaries supported by `docs/event-sources.md`; there are no seasonal dates or outdoor-program claims. Hults is not presented as an MIBC event.
 
 Only Register has an underlined “Start your application” anchor to the intentionally placeholder `https://forms.google.com`. The appointment and mail steps end in explanatory paragraphs separated by a fine rule; these are not controls and do not imply working booking or email delivery. Every event has a source link: MarXcellence to `https://marxcellence.com/`, Innovade to `https://nsumibc.org/innovade/`, Amelior to the official NSU newsletter PDF, and Intra-Ignite to `https://nsumibc.org/intra-ignite/`. The Amelior link explicitly says “Read about Amelior (PDF)”.
 

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 const siteUrl = 'https://nsumibc.online';
-const socialTitle = 'MIBC Recruitment 10.0 — Redefine Your Dimensions';
+const socialTitle = 'MIBC Recruitment 10.0: Redefine Your Dimensions';
 const socialDescription = 'Join MIBC Recruitment 10.0 at North South University. Redefine your dimensions.';
 const socialImage = {
   url: '/og/mibc-recruitment-10-v2.jpg',
@@ -10,12 +10,12 @@ const socialImage = {
   width: 1200,
   height: 630,
   type: 'image/jpeg',
-  alt: 'MIBC Recruitment 10.0 — Redefine Your Dimensions. Join the recruitment at North South University.',
+  alt: 'MIBC Recruitment 10.0: Redefine Your Dimensions. Join the recruitment at North South University.',
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: 'MIBC Recruitment 10.0 — Redefine Your Dimensions', template: '%s — MIBC Recruitment 10.0' },
+  title: { default: 'MIBC Recruitment 10.0: Redefine Your Dimensions', template: '%s: MIBC Recruitment 10.0' },
   description: socialDescription,
   applicationName: 'MIBC Recruitment 10.0',
   alternates: { canonical: '/' },

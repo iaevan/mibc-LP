@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Shell, ApplyLink, FAQ, Journey } from '@/components/common';
 import { Asterisk, Arrow } from '@/components/icons';
 import { disciplines } from '@/lib/content';
-export const metadata: Metadata = { title: 'Studio — Bring your kind of different' };
+export const metadata: Metadata = { title: 'Studio: Bring your kind of different' };
 export default function StudioPage() {
   return <Shell theme="studio" active={3}>
     <section className="studio-hero section-pad" data-motion><div className="studio-hero-meta"><span>MIBC RECRUITMENT</span><span>THE NEXT CHAPTER IS A COLLECTIVE ONE.</span></div><h1>BRING YOUR<br /><span>KIND OF</span><br /><em>DIFFERENT.</em></h1><div className="studio-artifacts" aria-hidden="true"><div className="studio-ticket"><Asterisk /><span>GOOD IDEAS<br />DON’T GROW<br />ALONE.</span><div className="ticket-perf" /><span className="ticket-caption">ADMIT ONE CURIOUS MIND</span></div><div className="studio-note">a little<br />out of the<br /><em>ordinary.</em><span>MIBC ↗</span></div><span className="studio-orbit-type">MAKE SOMETHING MATTER.</span></div><div className="studio-hero-bottom"><p>Big thinkers. Quiet makers. People people.<br />There’s no single way to belong at MIBC.</p><ApplyLink>Find your kind of people</ApplyLink></div></section>

@@ -1,4 +1,4 @@
-# Beyond the Ordinary — MIBC Recruitment
+# Beyond the Ordinary: MIBC Recruitment
 
 ## Current live version
 

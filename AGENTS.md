@@ -6,3 +6,4 @@
 - GitHub has a Cloudflare CI deployment pipeline. Prefer that pipeline; direct Wrangler deployment is also authorized, but does not replace committing and pushing to GitHub.
 - Use normal pushes. Never force-push or overwrite another contributor's work.
 - Keep all layout changes mobile friendly.
+- Do not use em dashes in website copy, metadata, alt text, or project documentation. Use normal sentence punctuation instead.
