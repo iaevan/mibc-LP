@@ -71,8 +71,8 @@ export function PageMotion() {
             { transform: 'scale(1.65) rotate(-24deg)', opacity: 0 },
             { transform: 'scale(.94) rotate(3deg)', opacity: 1, offset: .7 },
             { transform: 'scale(1) rotate(0deg)', opacity: 1 },
-          ] : [{ opacity: .45, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }],
-          { duration: stamp ? 650 : 600, easing: 'cubic-bezier(.16,1,.3,1)' });
+          ] : [{ opacity: .72, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }],
+          { duration: stamp ? 650 : 480, delay: Math.min(120, Math.max(0, Number(el.dataset.revealDelay) || 0)), easing: 'cubic-bezier(.16,1,.3,1)' });
           animations.add(animation);
           animation.onfinish = () => animations.delete(animation);
           reveals.unobserve(el);

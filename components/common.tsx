@@ -5,6 +5,7 @@ import { Arrow, Asterisk } from './icons';
 import { PageMotion } from './page-motion';
 import { SocialLinks } from './social-links';
 import { HeaderScroll } from './header-scroll';
+import { SectionNavigation } from './section-navigation';
 
 
 export type Theme = 'signal' | 'edition' | 'orbit' | 'studio' | 'invitation';
@@ -22,7 +23,7 @@ export function Header({ theme }: { theme: Theme }) {
 }
 
 export function Shell({ theme, children }: { theme: Theme; active?: number; children: ReactNode }) {
-  return <div className={`site theme-${theme}`} id="top"><a className="skip-link" href="#main">Skip to content</a><HeaderScroll /><Header theme={theme} /><main id="main">{children}</main><footer className="site-footer"><Brand compact /><p>Marketing and International Business Club<br className="mobile-break" /> of North South University</p><SocialLinks /><a href="#top">Back to top <Arrow /></a></footer><PageMotion /></div>;
+  return <div className={`site theme-${theme}`} id="top"><a className="skip-link" href="#main">Skip to content</a><HeaderScroll /><Header theme={theme} /><main id="main">{children}</main><footer className="site-footer"><Brand compact /><SocialLinks /><a href="#top">Back to top <Arrow /></a></footer><PageMotion /><SectionNavigation /></div>;
 }
 
 export function FAQ({ title = 'A little clarity, before you leap.' }: { title?: string }) {
@@ -34,5 +35,5 @@ export function Journey({ className = '' }: { className?: string }) {
 }
 
 export function FinalCTA({ title, children, className = '' }: { title: ReactNode; children?: ReactNode; className?: string }) {
-  return <section id="join" className={`final-cta section-pad ${className}`}><Asterisk /><h2>{title}</h2><p>{children || 'Your next chapter starts with a little curiosity. Bring yours to MIBC.'}</p><ApplyLink>REGISTER NOW</ApplyLink><span className="form-note">Takes you to Google Forms</span></section>;
+  return <section id="join" className={`final-cta section-pad ${className}`}><Asterisk /><h2>{title}</h2><p>{children || 'Your next chapter starts with a little curiosity. Bring yours to MIBC.'}</p><ApplyLink>REGISTER NOW</ApplyLink></section>;
 }

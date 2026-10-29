@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
-const siteUrl = 'https://mibc-recruitment.shobairechudi.workers.dev';
+const siteUrl = 'https://nsumibc.online';
 const socialTitle = 'MIBC Recruitment 10.0 — Redefine Your Dimensions';
 const socialDescription = 'Build your ideas, meet your people, and explore marketing and international business at North South University. Your next chapter starts with MIBC.';
 const socialImage = {
