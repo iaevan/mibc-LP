@@ -3,14 +3,14 @@ import './globals.css';
 
 const siteUrl = 'https://nsumibc.online';
 const socialTitle = 'MIBC Recruitment 10.0 — Redefine Your Dimensions';
-const socialDescription = 'Build your ideas, meet your people, and explore marketing and international business at North South University. Your next chapter starts with MIBC.';
+const socialDescription = 'Join MIBC Recruitment 10.0 at North South University. Redefine your dimensions.';
 const socialImage = {
-  url: '/og/mibc-recruitment-10-v1.jpg',
-  secureUrl: `${siteUrl}/og/mibc-recruitment-10-v1.jpg`,
+  url: '/og/mibc-recruitment-10-v2.jpg',
+  secureUrl: `${siteUrl}/og/mibc-recruitment-10-v2.jpg`,
   width: 1200,
-  height: 675,
+  height: 630,
   type: 'image/jpeg',
-  alt: 'MIBC Recruitment 10.0 — Redefine Your Dimensions. Ivory lettering and a sculptural crimson glass ribbon on burgundy, for North South University.',
+  alt: 'MIBC Recruitment 10.0 — Redefine Your Dimensions. Join the recruitment at North South University.',
 };
 
 export const metadata: Metadata = {

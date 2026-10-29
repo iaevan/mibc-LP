@@ -8,13 +8,13 @@ The sections below describe the original five-layout concept collection.
 
 Five complete, responsive recruitment landing pages for the **Marketing and International Business Club of North South University**. Built in Next.js with a static export, original campaign copy, local fonts, and one generated artwork.
 
-Live website: https://mibc-recruitment.shobairechudi.workers.dev/
+Live website: https://nsumibc.online/
 
 ## Social link previews
 
-The current Recruitment 10.0 page uses `public/og/mibc-recruitment-10-v1.jpg` for Open Graph previews and X's large-image card. The image is a public 1200×675 JPEG, approximately 118 KB. `app/layout.tsx` defines the production URL, canonical link, preview title, description, image dimensions, and image alt text. These tags are included in static HTML, so preview crawlers do not need JavaScript.
+The current Recruitment 10.0 page uses `public/og/mibc-recruitment-10-v2.jpg` for Open Graph previews and X's large-image card. The image is a public 1200×630 JPEG with a prominent “Join the recruitment” call to action. `app/layout.tsx` defines the production URL, canonical link, preview title, description, image dimensions, and image alt text. These tags are included in static HTML, so preview crawlers do not need JavaScript.
 
-The generated artwork's exact prompt is in `docs/og-image-prompt.txt`. Keep future image filenames versioned and update both Open Graph and X metadata when replacing the artwork. Social apps cache previews independently; an already-shared URL may need a fresh scrape or platform cache refresh. Search indexing remains disabled while the registration form is a placeholder; `robots.txt` permits fetching the public page and image assets.
+The generated artwork's exact prompt is in `docs/og-image-v2-prompt.txt`. Keep future image filenames versioned and update both Open Graph and X metadata when replacing the artwork. Social apps cache previews independently; an already-shared URL may need a fresh scrape or platform cache refresh. Search indexing remains disabled while the registration form is a placeholder; `robots.txt` permits fetching the public page and image assets.
 
 ## Preview the five layouts
 
