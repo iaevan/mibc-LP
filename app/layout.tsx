@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'Beyond the Ordinary — MIBC Recruitment', template: '%s — MIBC Recruitment' },
-  description: 'Find your people. Build your ideas. Explore the Marketing and International Business Club of North South University and begin your next chapter.',
+  title: { default: 'MIBC Recruitment 10.0 — Redefine Your Dimensions', template: '%s — MIBC Recruitment 10.0' },
+  description: 'Redefine Your Dimensions. Join the 10th edition of recruitment at the Marketing and International Business Club of North South University.',
   robots: { index: false, follow: false },
   icons: { icon: '/icon.svg' },
 };

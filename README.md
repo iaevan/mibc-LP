@@ -1,5 +1,11 @@
 # Beyond the Ordinary — MIBC Recruitment
 
+## Current live version
+
+Only the Signal layout at `/` is published. The other four layouts are retained in `archive/layouts/` and are not exported or available on the live site. The layout switcher has been removed. The supplied official club logo is used in the header and footer, with phone navigation, readable content, and a compact single-column recruitment flow.
+
+The sections below describe the original five-layout concept collection.
+
 Five complete, responsive recruitment landing pages for the **Marketing and International Business Club of North South University**. Built in Next.js with a static export, original campaign copy, local fonts, and one generated artwork.
 
 Live website: https://mibc-recruitment.shobairechudi.workers.dev/

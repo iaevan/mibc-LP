@@ -1,30 +1,31 @@
-import { Arrow, Asterisk, Geometry } from './icons';
-import { FORM_URL } from '@/lib/content';
+import { Asterisk, Geometry } from './icons';
+
 
 const tracks = [
-  { day: 'Step 01', title: 'Register', text: 'Tell us who you are, what interests you, and what you’d like to explore at MIBC. Use an email address you check regularly so you don’t miss the next step.', note: 'Start your application' },
-  { day: 'Step 02', title: 'Book an appointment', text: 'Follow the booking instructions shared by the recruitment team to choose your appointment. Bring your questions, your interests, and a little curiosity—we want to get to know you.', note: 'Watch for booking instructions' },
-  { day: 'Step 03', title: 'Check your mail', text: 'Keep an eye on the email address you registered with for your appointment details, recruitment updates, and next steps. Check your spam folder too, just in case.', note: 'Check your inbox and spam folder' },
+  { title: 'Register', text: 'Complete the registration form and take your first step towards becoming part of MIBC.' },
+  { title: 'Schedule Your Round 1 Appointment', text: 'To secure your interview slot, please find our booth at the lower plaza.' },
+  { title: 'Stay Tuned', text: 'Keep an eye on your mail inbox and spam folder for Round 1 selection updates and further instructions.' },
 ];
 const events = [
-  { category: 'Digital marketing', title: 'MarXcellence', text: 'Turn audience insights into a strategy worth pitching. MIBC’s digital marketing case competition challenges university teams to solve business problems, shape campaigns, and present their ideas to industry professionals.', url: 'https://marxcellence.com/' },
-  { category: 'International business', title: 'Innovade', text: 'Think across borders. Tackle international business cases, analyze markets, and build practical strategies with your team. Expert-led workshops and competitive presentations connect classroom knowledge with global business decisions.', url: 'https://nsumibc.org/innovade/' },
-  { category: 'Industry insights', title: 'Amelior', text: 'Learn from the people doing the work. MIBC’s seminar and skill-development series brings students closer to corporate leaders, with conversations on marketing, sales, international business, and the skills that shape a career.', url: 'https://www.northsouth.edu/newassets/images/5-3342.Dec2019-Jan%202020.pdf' },
-  { category: 'Intra-NSU competition', title: 'Intra-Ignite', text: 'Put your marketing instincts to the test on your own campus. This MIBC competition brings NSU undergraduates together to solve real-world marketing challenges through creative ideas, strategic thinking, and persuasive presentations.', url: 'https://nsumibc.org/intra-ignite/' },
+  { category: 'Digital marketing', title: 'MarXcellence', text: 'Where creativity meets strategy, MarXcellence stands as the nation’s largest international inter-university digital marketing case competition, bringing together some of the brightest young minds from across the nation and beyond. Participants transform audience insights into compelling campaigns, tackle real-world business challenges, and pitch innovative solutions to industry professionals.', url: 'https://marxcellence.com/' },
+  { category: 'International business', title: 'Innovade', text: 'Where global challenges spark transformative ideas, INNOVADE brings ambitious young minds to the forefront of international business, inspiring them to decode complex market dynamics, rethink conventional strategies, and develop innovative solutions that transcend borders.', url: 'https://nsumibc.org/innovade/' },
+  { category: 'Industry insights', title: 'Amelior', text: 'Preparing the next generation for the professional world, AMELIOR empowers aspiring professionals to bridge the gap between academic knowledge and industry expectations through expert insights, meaningful corporate exposure, and the skills to navigate an evolving business landscape.', url: 'https://www.northsouth.edu/newassets/images/5-3342.Dec2019-Jan%202020.pdf' },
+  { category: 'Intra-NSU competition', title: 'Intra-Ignite', text: 'Fueling a culture of innovation within NSU, Intra-Ignite brings students together to test their business acumen, tackle real-world marketing challenges, and transform bold ideas into strategic solutions - all on a campus-wide stage.', url: 'https://nsumibc.org/intra-ignite/' },
 ];
 
 export function ClubProgram() {
   return <div className="club-program">
     <section className="weekly-tracks section-pad" id="weekly-tracks" aria-labelledby="weekly-title">
-      <header className="program-heading"><h2 id="weekly-title">Your next chapter.<br /><em>Three simple steps.</em></h2><div><span className="program-caption">The recruitment journey</span><p>Start with an introduction. Make time for a conversation. Stay connected for what comes next. Here’s how to take your first steps with MIBC.</p></div></header>
-      <div className="track-spread" data-motion>{tracks.map((track, i) => <article className={`track-sheet track-${i}`} key={track.day}>
-        <div className="track-schedule"><span>{track.day}</span><Asterisk /></div><h3>{track.title}</h3><p>{track.text}</p>{i === 0 ? <a href={FORM_URL} className="track-link">{track.note}<Arrow diagonal /></a> : <p className="track-next">{track.note}</p>}<span className="track-fold" aria-hidden="true" />
-      </article>)}</div>
+      <header className="roadmap-heading"><span className="program-caption">The recruitment journey</span><h2 id="weekly-title">Your next chapter.<br /><em>Three simple steps.</em></h2></header>
+      <ol className="recruitment-roadmap">{tracks.map((track, i) => <li className="roadmap-step" key={track.title}>
+        <span className="roadmap-number" aria-hidden="true">0{i + 1}</span><div className="roadmap-copy"><h3>{track.title}</h3><p>{track.text}</p></div>
+      </li>)}</ol>
+      <div className="roadmap-action"><p>TAKE THE LEAP.</p></div>
     </section>
     <section className="annual-gatherings section-pad" id="annual-gatherings" aria-labelledby="annual-title">
-      <header className="program-heading"><h2 id="annual-title">Big ideas.<br /><em>Real experience.</em></h2><div><span className="program-caption">Four MIBC events</span><p>From digital campaigns to international business cases, MIBC creates space to test your thinking, learn from industry voices, and work on ideas beyond the classroom. Explore four events that bring that ambition to life.</p></div></header>
-      <div className="season-collection" data-motion><div className="season-orbit" aria-hidden="true"><Geometry /><span>Ideas into<br /><em>experience.</em></span></div><div className="season-list">{events.map((event, i) => <article className={`season-event season-${i}`} key={event.title}>
-        <div className="season-date"><span>{event.category}</span></div><h3>{event.title}</h3><p>{event.text}</p><a className="event-source" href={event.url}>{event.title === 'Amelior' ? 'Read about Amelior (PDF)' : `Explore ${event.title}`}<Arrow diagonal /></a><div className="season-rule" aria-hidden="true"><span /><Asterisk /></div>
+      <header className="program-heading events-intro"><span className="program-caption">Four MIBC events</span><h2 id="annual-title">Big ideas.<br /><em>Real experience.</em></h2><p>From digital campaigns to international business cases, MIBC creates space to test your thinking, learn from industry voices, and work on ideas beyond the classroom. Explore four events that bring that ambition to life.</p></header>
+      <div className="season-collection" data-motion><div className="season-orbit"><span className="orbit-geometry" aria-hidden="true"><Geometry /></span><span>Your next chapter<br /><em>starts here.</em></span></div><div className="season-list">{events.map((event, i) => <article className={`season-event season-${i}`} key={event.title}>
+        <div className="season-date"><span>{event.category}</span></div><h3>{event.title}</h3><p>{event.text}</p><div className="season-rule" aria-hidden="true"><span /><Asterisk /></div>
       </article>)}</div></div>
     </section>
   </div>;
