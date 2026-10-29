@@ -19,7 +19,7 @@ export default function SignalPage() {
     </section>
     <ClubProgram />
     <EventLogos />
-    <section className="signal-manifesto club-motto section-pad" aria-labelledby="motto-title"><h2 id="motto-title" data-reveal>Envision<br /><em>Beyond Borders.</em></h2><div><span>Marketing &amp; International Business Club</span><Asterisk /></div></section>
+    <section className="signal-manifesto club-motto section-pad" aria-labelledby="motto-title"><span className="motto-emblem" aria-hidden="true"><Asterisk /></span><h2 id="motto-title" data-reveal>Envision<br /><em>Beyond Borders.</em></h2><div className="motto-identity"><p>Marketing &amp; International<br className="motto-name-break" /> Business Club</p><span className="motto-university">North South University</span></div></section>
 
     <FinalCTA title={<>Redefine Your<br /><em>Dimensions</em></>}>Be part of MIBC Recruitment 10.0. Bring your ambition. Find your people.</FinalCTA>
   </Shell>;
