@@ -2,7 +2,7 @@ import { Asterisk, Geometry } from './icons';
 
 
 const tracks = [
-  { title: 'Register', text: 'Complete the registration form and take your first step towards becoming part of MIBC.' },
+  { title: 'Register', text: 'Complete the registration form and take your first step towards becoming a part of MIBC.' },
   { title: 'Schedule Your Round 1 Appointment', text: 'To secure your interview slot, please find our booth at the lower plaza.' },
   { title: 'Stay Tuned', text: 'Keep an eye on your email and spam folder for Round 1 result and further instructions.' },
 ];

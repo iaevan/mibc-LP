@@ -1,4 +1,4 @@
-export const FORM_URL = 'https://forms.google.com';
+export const FORM_URL = 'https://forms.gle/2Xte4nMjGHL91dRJ9';
 
 export const concepts = [
   { number: '01', name: 'Signal', path: '/' },
