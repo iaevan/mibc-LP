@@ -1201,3 +1201,12 @@
   .signal-art-frame .knot { width: 94%; height: auto; margin: 0; }
   .signal-art-frame .art-cross { top: 9%; right: 5%; }
 }
+/* A centered campaign lockup on phones, independent of flex wrapping. */
+@layer responsive {
+  @media(max-width:760px) {
+    .recruitment-edition { display: grid; grid-template-columns: minmax(0,1fr); justify-items: center; gap: .5rem; width: 100%; margin: 0 auto 1.75rem; text-align: center; }
+    .recruitment-edition>span { display: block; max-width: 100%; font-size: .75rem; line-height: 1.5; letter-spacing: .08em; }
+    .recruitment-edition strong { display: block; border: 0; padding: 0; font-size: 2.25rem; line-height: 1.1; letter-spacing: -.04em; }
+    .recruitment-edition>span:last-child { font-size: .75rem; }
+  }
+}
