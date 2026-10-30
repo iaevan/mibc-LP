@@ -1210,3 +1210,11 @@
     .recruitment-edition>span:last-child { font-size: .75rem; }
   }
 }
+
+/* Preserve reading space when visitors enlarge text or use short viewports. */
+@layer responsive {
+  html { scroll-padding-top: var(--navigation-offset, 100px); }
+  .theme-signal .site-header.is-unpinned { position: relative; top: auto; }
+  .roadmap-copy h3 { overflow-wrap: anywhere; }
+  .club-motto h2, .club-motto h2 em { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+}
