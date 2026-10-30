@@ -1194,3 +1194,10 @@
   }
   @media(prefers-reduced-motion:reduce) { .knot { animation: none; } }
 }
+@layer responsive {
+  .signal-art-frame { position: relative; width: 100%; aspect-ratio: 1; display: grid; place-items: center; isolation: isolate; }
+  .signal-art .signal-art-frame>.geometry { position: absolute; inset: 4%; width: 92%; height: 92%; }
+  .signal-art .signal-art-frame>picture { display: grid; place-items: center; width: 100%; }
+  .signal-art-frame .knot { width: 94%; height: auto; margin: 0; }
+  .signal-art-frame .art-cross { top: 9%; right: 5%; }
+}

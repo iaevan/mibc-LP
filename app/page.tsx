@@ -13,7 +13,7 @@ export default function SignalPage() {
 
         <div className="hero-actions"><ApplyLink>REGISTER NOW</ApplyLink></div>
       </div>
-      <div className="signal-art"><Geometry /><picture><source type="image/webp" srcSet="/images/crimson-knot-480.webp 480w, /images/crimson-knot-768.webp 768w, /images/crimson-knot.webp 1100w" sizes="(max-width: 523px) 88vw, (max-width: 760px) 460px, (max-width: 1600px) 42vw, 650px" /><img className="knot" src="/images/crimson-knot.webp" alt="A sculptural crimson ribbon forming three connected loops" width={1100} height={1100} fetchPriority="high" loading="eager" decoding="async" /></picture><span className="art-caption">Different minds.<br />Extraordinary possibilities.</span><span className="art-cross" aria-hidden="true">+</span></div>
+      <div className="signal-art"><div className="signal-art-frame"><Geometry /><picture><source type="image/webp" srcSet="/images/crimson-knot-480.webp 480w, /images/crimson-knot-768.webp 768w, /images/crimson-knot.webp 1100w" sizes="(max-width: 523px) 88vw, (max-width: 760px) 460px, (max-width: 1600px) 42vw, 650px" /><img className="knot" src="/images/crimson-knot.webp" alt="A sculptural crimson ribbon forming three connected loops" width={1100} height={1100} fetchPriority="high" loading="eager" decoding="async" /></picture><span className="art-cross" aria-hidden="true">+</span></div><span className="art-caption">Different minds.<br />Extraordinary possibilities.</span></div>
       <div className="hero-baseline"><span>Made of ambition.<br />Built by people like you.</span><a href="#weekly-tracks">Discover what’s next <Arrow /></a><span>North South University<br />Marketing &amp; International Business Club</span></div>
     </section>
     <ClubProgram />
