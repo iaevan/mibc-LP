@@ -1199,9 +1199,11 @@
   .hero-linework { position: absolute; inset: 0; pointer-events: none; }
   .signal-art .hero-linework>.geometry { inset: 0; width: 100%; height: 100%; transform: none; rotate: none; transform-box: view-box; transform-origin: 50% 50%; }
   .signal-art-frame>.art-cross { right: 2%; top: 10%; width: clamp(18px, 2vw, 24px); height: auto; pointer-events: none; }
-  /* Share the orbit's center so the visible ribbon has even outer clearance. */
-  .signal-art .signal-art-frame>picture { display: grid; place-items: center; width: 100%; translate: none; }
-  .signal-art-frame .knot { width: 90%; height: auto; margin: 0; }
+  /* Both layers fill the same square. Keep a clear perimeter around the
+     asymmetric ribbon so its lobes never compete with the circular outline. */
+  .signal-art .signal-art-frame>picture { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; translate: none; }
+  .signal-art-frame picture>source { display: none; }
+  .signal-art-frame .knot { width: 82%; height: auto; margin: 0; }
   @media(prefers-reduced-motion:no-preference) {
     .signal-art .hero-linework>.geometry { animation: hero-orbit 100s linear infinite; animation-play-state: paused; }
     .signal-art .hero-linework.is-running>.geometry { animation-play-state: running; }
