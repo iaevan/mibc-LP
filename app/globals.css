@@ -1196,11 +1196,16 @@
 }
 @layer responsive {
   .signal-art-frame { position: relative; width: 100%; aspect-ratio: 1; display: grid; place-items: center; isolation: isolate; }
-  .signal-art .signal-art-frame>.geometry { position: absolute; inset: 0; width: 100%; height: 100%; transform: none; rotate: none; }
+  .hero-linework { position: absolute; inset: 0; pointer-events: none; }
+  .signal-art .hero-linework>.geometry { inset: 0; width: 100%; height: 100%; transform: none; rotate: none; transform-box: view-box; transform-origin: 50% 50%; }
+  .signal-art-frame>.art-cross { right: 2%; top: 10%; width: clamp(18px, 2vw, 24px); height: auto; pointer-events: none; }
   /* Balance the sculpture's heavier lower-right lobes within the circle. */
   .signal-art .signal-art-frame>picture { display: grid; place-items: center; width: 100%; translate: -.8% -1.5%; }
   .signal-art-frame .knot { width: 90%; height: auto; margin: 0; }
   @media(prefers-reduced-motion:no-preference) {
+    .signal-art .hero-linework>.geometry { animation: hero-orbit 100s linear infinite; animation-play-state: paused; }
+    .signal-art .hero-linework.is-running>.geometry { animation-play-state: running; }
+    @keyframes hero-orbit { to { transform: rotate(360deg); } }
     .signal-art-frame .knot { animation: artwork-appear .45s ease-out both; }
     @keyframes artwork-appear { from { opacity: .85; } to { opacity: 1; } }
   }
