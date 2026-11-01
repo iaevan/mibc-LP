@@ -13,9 +13,24 @@ No registration responses or personal details are collected by this integration.
 
 The project token is a public browser ingestion token, safe to ship in JavaScript.
 Never replace it with a personal API key. Builds can override the public defaults
-using `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` and `NEXT_PUBLIC_POSTHOG_HOST` in
-Cloudflare's build environment. These values are compiled into the static export,
-so changing them requires a rebuild.
+using `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` in Cloudflare's build environment.
+The value is compiled into the static export, so changing it requires a rebuild.
+If changing projects, also update the permitted public token in `worker.mjs`.
+`api_host` uses this site's `/mibc-pulse` reverse proxy; `ui_host` stays on
+`https://us.posthog.com`. The previous `NEXT_PUBLIC_POSTHOG_HOST` variable is no
+longer used, to prevent an old build setting from bypassing the proxy.
+
+## Reverse proxy health
+
+The existing Cloudflare Worker serves only `/mibc-pulse/*` through the proxy.
+Website pages and assets continue to use Cloudflare's static asset serving.
+SDK `/static/` and `/array/` requests go to the US asset host; supported ingestion
+and flag endpoints go to the US ingestion host. Cookies and unrelated authorization
+headers are stripped, Cloudflare's verified client IP is forwarded, and event
+responses are not cached. This does not override Do Not Track or enable replay.
+
+PostHog's reverse proxy health recommendation is based on recent event data and
+can take time to clear after the first proxied page view arrives.
 
 ## Installation checklist
 

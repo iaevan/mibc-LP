@@ -4,11 +4,12 @@ import { FORM_URL } from './lib/content';
 // These are public ingestion settings, not a personal or management API key.
 // Defaults keep GitHub/Cloudflare static builds connected to the same project.
 const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN || 'phc_DbtF2v2rM5f4jj4quFvWzDebRTytBxvbhKNsLvgc2Zim';
-const host = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+const host = `${window.location.origin}/mibc-pulse`;
 
 if (['nsumibc.online', 'www.nsumibc.online'].includes(window.location.hostname)) {
   posthog.init(token, {
     api_host: host,
+    ui_host: 'https://us.posthog.com',
     defaults: '2026-08-30',
     person_profiles: 'identified_only',
     autocapture: { dom_event_allowlist: ['click'], capture_copied_text: false },
