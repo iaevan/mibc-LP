@@ -1,9 +1,11 @@
-// Sends each attendee their ticket by email, one per cron tick (once a minute),
-// through the club's Hostinger mailbox. Test users (source = 'test') always go
-// first. The SMTP password is the SMTP_PASSWORD Worker secret.
+// Ticket email queue. The GitHub Actions sender (.github/workflows/mail-sender.yml)
+// asks this API for the next person about once a minute, sends through the
+// club's Hostinger mailbox, and reports back. Workers cannot send through
+// Hostinger SMTP themselves: its servers sit on Cloudflare IPs, which Worker
+// sockets may not connect to. Test users (source = 'test') always go first.
 
-import { WorkerMailer } from 'worker-mailer';
 import { renderEmail, ticketFileName } from './mail-template.mjs';
+import { sha256Hex } from './ticketing-shared.mjs';
 
 const EVENT_ID = 1;
 const STUCK_MS = 10 * 60 * 1000;
@@ -24,8 +26,8 @@ async function readBody(request) {
   try { return await request.json(); } catch { return {}; }
 }
 
-function smtpReady(env) {
-  return Boolean(env.SMTP_PASSWORD && env.SMTP_USER && env.SMTP_HOST);
+function runnerReady(env) {
+  return Boolean(env.MAIL_RUNNER_TOKEN);
 }
 
 async function getCampaign(env) {
@@ -66,13 +68,13 @@ async function status(env) {
     sentAt: row.mail_sent_at,
     ticketReady: Boolean(row.ticket_ready_at),
   }));
-  return json({ campaign, people, smtpReady: smtpReady(env), from: env.SMTP_USER ?? null, serverTime: Date.now() });
+  return json({ campaign, people, runnerReady: runnerReady(env), from: env.SMTP_USER ?? null, serverTime: Date.now() });
 }
 
 async function start(request, env, username) {
   const body = await readBody(request);
   const scope = body.scope === 'test' ? 'test' : 'all';
-  if (!smtpReady(env)) throw new MailError(409, 'The SMTP password secret is not set on the Worker yet.');
+  if (!runnerReady(env)) throw new MailError(409, 'The MAIL_RUNNER_TOKEN secret is not set on the Worker yet.');
   const missing = await env.DB.prepare(`SELECT COUNT(*) AS count FROM attendees WHERE event_id = ? AND email IS NOT NULL
     AND mail_status = 'pending' AND ticket_ready_at IS NULL AND ${scopeFilter}`).bind(EVENT_ID, scope).first();
   if (missing?.count) throw new MailError(409, `${missing.count} people in the queue have no ticket image yet. Upload tickets first.`);
@@ -120,6 +122,15 @@ export async function handleMailApi(request, env, path, username) {
   return null;
 }
 
+
+// The sender authenticates with the MAIL_RUNNER_TOKEN shared secret.
+async function runnerAuthorized(request, env) {
+  const header = request.headers.get('authorization') || '';
+  if (!env.MAIL_RUNNER_TOKEN || !header.startsWith('Bearer ')) return false;
+  const [given, wanted] = await Promise.all([sha256Hex(header.slice(7)), sha256Hex(env.MAIL_RUNNER_TOKEN)]);
+  return given === wanted;
+}
+
 function base64(buffer) {
   const bytes = new Uint8Array(buffer);
   if (typeof bytes.toBase64 === 'function') return bytes.toBase64();
@@ -128,54 +139,13 @@ function base64(buffer) {
   return btoa(binary);
 }
 
-// Problems with the mailbox or connection, not with one recipient. Retrying the
-// next person would fail the same way, so the run pauses instead.
-function isServerProblem(message) {
-  return /auth|535|534|530|timeout|connect|closed|socket|421|451|452|454|quota|limit/i.test(message);
-}
-
-async function sendOne(env, person) {
-  const image = await env.TICKET_IMAGES.get(person.token, 'arrayBuffer');
-  if (!image) throw Object.assign(new Error('No ticket image uploaded for this person'), { recipient: true });
-  const { subject, text, html } = renderEmail(person.name);
-  const fromName = env.MAIL_FROM_NAME || 'NSU MIBC';
-  const mailer = await WorkerMailer.connect({
-    host: env.SMTP_HOST,
-    port: Number(env.SMTP_PORT || 465),
-    secure: String(env.SMTP_SECURE ?? 'true') !== 'false',
-    credentials: { username: env.SMTP_USER, password: env.SMTP_PASSWORD },
-    authType: ['plain', 'login'],
-    name: env.SMTP_USER.split('@').pop(),
-    socketTimeoutMs: 20_000,
-    responseTimeoutMs: 30_000,
-  });
-  try {
-    await mailer.send({
-      from: { name: fromName, email: env.SMTP_USER },
-      reply: { name: fromName, email: env.SMTP_USER },
-      to: { name: person.name, email: person.email },
-      subject,
-      text,
-      html,
-      attachments: [{ filename: ticketFileName(person.name), content: base64(image), mimeType: 'image/jpeg' }],
-    });
-  } finally {
-    await mailer.close().catch(() => undefined);
-  }
-}
-
-// Called by the cron trigger every minute. Sends at most one email.
-export async function runMailTick(env) {
-  if (!env.DB) return;
+// Hands the next person to the sender. Returns { stop } when there is nothing
+// to do, { wait } when a send is still in flight, or the email to send.
+async function claim(env) {
   const now = Date.now();
-  const campaign = await getCampaign(env).catch(() => null);
-  if (!campaign || campaign.state !== 'running') return;
+  const campaign = await getCampaign(env);
+  if (campaign.state !== 'running') return json({ stop: true, state: campaign.state });
   await setCampaign(env, { last_tick_at: now }).run();
-
-  if (!smtpReady(env) || !env.TICKET_IMAGES) {
-    await setCampaign(env, { state: 'paused', last_error: 'SMTP password or ticket image storage is missing on the Worker.' }).run();
-    return;
-  }
 
   // A send that never reported back may or may not have gone out. Mark it failed
   // so a person checks the inbox before retrying, rather than sending twice.
@@ -192,33 +162,67 @@ export async function runMailTick(env) {
 
   if (!person) {
     const busy = await env.DB.prepare("SELECT COUNT(*) AS count FROM attendees WHERE event_id = ? AND mail_status = 'sending'").bind(EVENT_ID).first();
-    if (!busy?.count) await setCampaign(env, { state: 'done' }).run();
-    return;
+    if (busy?.count) return json({ wait: true });
+    await setCampaign(env, { state: 'done' }).run();
+    return json({ stop: true, state: 'done' });
   }
 
-  try {
-    await sendOne(env, person);
+  const image = env.TICKET_IMAGES ? await env.TICKET_IMAGES.get(person.token, 'arrayBuffer') : null;
+  if (!image) {
+    await env.DB.prepare("UPDATE attendees SET mail_status = 'failed', mail_error = ? WHERE id = ?")
+      .bind('No ticket image uploaded for this person', person.id).run();
+    return json({ wait: true });
+  }
+  const { subject, text, html } = renderEmail(person.name);
+  return json({
+    id: person.id,
+    to: { name: person.name, email: person.email },
+    subject,
+    text,
+    html,
+    attachment: { filename: ticketFileName(person.name), contentType: 'image/jpeg', base64: base64(image) },
+  });
+}
+
+// The sender reports each result. serverProblem means the mailbox or connection
+// failed, so the person goes back in the queue and sending pauses.
+async function report(request, env) {
+  const body = await readBody(request);
+  const id = Number(body.id);
+  if (!Number.isInteger(id)) throw new MailError(400, 'Missing id');
+  const row = await env.DB.prepare("SELECT mail_status FROM attendees WHERE id = ? AND event_id = ?").bind(id, EVENT_ID).first();
+  if (!row || row.mail_status !== 'sending') return json({ ok: true, ignored: true });
+  const campaign = await getCampaign(env);
+
+  if (body.ok) {
     await env.DB.batch([
-      env.DB.prepare("UPDATE attendees SET mail_status = 'sent', mail_sent_at = ?, mail_error = NULL WHERE id = ?").bind(Date.now(), person.id),
+      env.DB.prepare("UPDATE attendees SET mail_status = 'sent', mail_sent_at = ?, mail_error = NULL WHERE id = ?").bind(Date.now(), id),
       setCampaign(env, { failures_in_row: 0, last_error: null }),
     ]);
-  } catch (error) {
-    const message = String(error?.message || error).slice(0, 300);
-    console.error('Mail send failed', person.id, message);
-    if (!error?.recipient && isServerProblem(message)) {
-      // Put the person back in the queue and stop until someone looks.
+  } else {
+    const message = String(body.error || 'Unknown error').slice(0, 300);
+    if (body.serverProblem) {
       await env.DB.batch([
-        env.DB.prepare("UPDATE attendees SET mail_status = 'pending', mail_error = ? WHERE id = ?").bind(message, person.id),
+        env.DB.prepare("UPDATE attendees SET mail_status = 'pending', mail_error = ? WHERE id = ?").bind(message, id),
         setCampaign(env, { state: 'paused', last_error: `Paused: ${message}` }),
       ]);
-      return;
+    } else {
+      const failures = campaign.failuresInRow + 1;
+      await env.DB.batch([
+        env.DB.prepare("UPDATE attendees SET mail_status = 'failed', mail_error = ? WHERE id = ?").bind(message, id),
+        failures >= MAX_FAILURES_IN_ROW
+          ? setCampaign(env, { failures_in_row: failures, state: 'paused', last_error: `Paused after ${failures} failures in a row. Last: ${message}` })
+          : setCampaign(env, { failures_in_row: failures, last_error: message }),
+      ]);
     }
-    const failures = campaign.failuresInRow + 1;
-    await env.DB.batch([
-      env.DB.prepare("UPDATE attendees SET mail_status = 'failed', mail_error = ? WHERE id = ?").bind(message, person.id),
-      failures >= MAX_FAILURES_IN_ROW
-        ? setCampaign(env, { failures_in_row: failures, state: 'paused', last_error: `Paused after ${failures} failures in a row. Last: ${message}` })
-        : setCampaign(env, { failures_in_row: failures, last_error: message }),
-    ]);
   }
+  const after = await getCampaign(env);
+  return json({ ok: true, stop: after.state !== 'running' });
+}
+
+export async function handleRunnerApi(request, env, path) {
+  if (!(await runnerAuthorized(request, env))) throw new MailError(401, 'Unauthorized');
+  if (path === 'mail/runner/claim' && request.method === 'POST') return claim(env);
+  if (path === 'mail/runner/report' && request.method === 'POST') return report(request, env);
+  throw new MailError(404, 'Not found');
 }

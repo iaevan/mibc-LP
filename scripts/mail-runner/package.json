@@ -1,0 +1,12 @@
+{
+  "name": "mibc-mail-runner",
+  "private": true,
+  "type": "module",
+  "description": "Sends queued ticket emails through the club mailbox. Run by .github/workflows/mail-sender.yml.",
+  "scripts": {
+    "start": "node send.mjs"
+  },
+  "dependencies": {
+    "nodemailer": "^10.5.0"
+  }
+}

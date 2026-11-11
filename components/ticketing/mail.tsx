@@ -25,7 +25,7 @@ type Campaign = {
   updatedAt: number;
   updatedBy: string | null;
 };
-type MailData = { campaign: Campaign; people: Person[]; smtpReady: boolean; from: string | null; serverTime: number; deleted?: number };
+type MailData = { campaign: Campaign; people: Person[]; runnerReady: boolean; from: string | null; serverTime: number; deleted?: number };
 type Filter = 'all' | 'test' | 'failed' | 'waiting';
 
 const POLL_MS = 5000;
@@ -142,8 +142,8 @@ export function MailPanel({ active, onUnauthorized }: { active: boolean; onUnaut
         <p className={styles.hint}>From {data.from ?? 'the club mailbox'}. One email per minute, test users first.</p>
       </div>
 
-      {!data.smtpReady && (
-        <p className={styles.mailAlert} role="alert">The mailbox password is not set on the Worker. Run <code>npx wrangler secret put SMTP_PASSWORD</code> once, then reload.</p>
+      {!data.runnerReady && (
+        <p className={styles.mailAlert} role="alert">The email sender is not connected yet. Set the MAIL_RUNNER_TOKEN secret on the Worker and on GitHub, then reload.</p>
       )}
       {summary.noTicket > 0 && (
         <p className={styles.mailAlert} role="alert">{summary.noTicket} people have no ticket image yet. Run <code>npm run tickets -- render --remote</code> and <code>npm run tickets -- upload --remote</code>.</p>
@@ -166,7 +166,7 @@ export function MailPanel({ active, onUnauthorized }: { active: boolean; onUnaut
             {sending ? <>Sending to <b>{sending.name}</b> now. </> : null}
             {finishAt ? <>About {queueLeft} min left, done around {formatTime(finishAt)}. </> : null}
             {lastSent ? <>Last sent to {lastSent.name} at {formatTime(lastSent.sentAt)}. </> : null}
-            {running && lastTickAgo != null && lastTickAgo > 150 ? <>The sender has not run for {Math.round(lastTickAgo / 60)} min. Check the Worker cron.</> : null}
+            {running && lastTickAgo != null && lastTickAgo > 150 ? <>The sender has not checked in for {Math.round(lastTickAgo / 60)} min. It starts within about 10 minutes; if it does not, run the Mail sender workflow on GitHub Actions.</> : null}
           </p>
         </div>
         <div className={styles.stat}><b>{summary.sent}</b><span>Sent</span></div>
@@ -180,10 +180,10 @@ export function MailPanel({ active, onUnauthorized }: { active: boolean; onUnaut
           <button type="button" className={styles.secondary} disabled={busy} onClick={() => act('mail/pause')}>Pause sending</button>
         ) : (
           <>
-            <button type="button" className={styles.secondary} disabled={busy || !summary.testWaiting} onClick={() => act('mail/start', { scope: 'test' }, () => 'Test emails are queued. The first one goes out within a minute.')}>
+            <button type="button" className={styles.secondary} disabled={busy || !summary.testWaiting} onClick={() => act('mail/start', { scope: 'test' }, () => 'Test emails are queued. The sender picks them up within about 10 minutes.')}>
               Send test emails ({summary.testWaiting})
             </button>
-            <button type="button" className={styles.primary} disabled={busy || !summary.waiting} onClick={() => act('mail/start', { scope: 'all' }, () => 'Sending started. Test users go first, then everyone else.')}>
+            <button type="button" className={styles.primary} disabled={busy || !summary.waiting} onClick={() => act('mail/start', { scope: 'all' }, () => 'Sending started. The sender picks it up within about 10 minutes, test users first.')}>
               {campaign.state === 'paused' && campaign.scope === 'all' ? 'Resume sending' : 'Send to everyone'} ({summary.waiting})
             </button>
           </>

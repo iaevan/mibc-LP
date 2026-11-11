@@ -1,0 +1,43 @@
+name: Mail sender
+
+# Sends queued ticket emails from the ticket desk's Mail tab, one per minute,
+# through the club's Hostinger mailbox. Cloudflare Workers cannot reach
+# Hostinger SMTP, so this job does the sending and the Worker keeps the queue.
+# Each run exits at once unless sending was started from the Mail tab.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/10 * * * *'
+
+concurrency:
+  group: mail-sender
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/mail-runner
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+        working-directory: scripts/mail-runner
+      - run: node send.mjs
+        working-directory: scripts/mail-runner
+        env:
+          MAIL_API: https://nsumibc.online
+          MAIL_RUNNER_TOKEN: ${{ secrets.MAIL_RUNNER_TOKEN }}
+          SMTP_HOST: smtp.hostinger.com
+          SMTP_PORT: '465'
+          SMTP_USER: info@nsumibc.online
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM_NAME: NSU MIBC
+          MAX_MINUTES: '330'

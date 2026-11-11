@@ -27,16 +27,13 @@
       "id": "6bad1162f438487d927d9721d3288a42"
     }
   ],
-  // The mail queue sends one ticket email per minute.
+  // Ticket emails are sent by the GitHub Actions sender (.github/workflows/mail-sender.yml),
+  // which authenticates to the Worker with the MAIL_RUNNER_TOKEN secret.
+  // No cron triggers: an earlier version sent from the Worker every minute.
   "triggers": {
-    "crons": ["* * * * *"]
+    "crons": []
   },
-  // The mailbox password is the SMTP_PASSWORD secret: `npx wrangler secret put SMTP_PASSWORD`.
   "vars": {
-    "SMTP_HOST": "smtp.hostinger.com",
-    "SMTP_PORT": "465",
-    "SMTP_SECURE": "true",
-    "SMTP_USER": "info@nsumibc.online",
-    "MAIL_FROM_NAME": "NSU MIBC"
+    "SMTP_USER": "info@nsumibc.online"
   }
 }

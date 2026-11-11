@@ -1,7 +1,7 @@
 import {
   attendeesFromCsv, cleanAttendee, createToken, normalizeToken, randomHex, sha256Hex, verifyPassword,
 } from './ticketing-shared.mjs';
-import { MailError, handleMailApi } from './mail.mjs';
+import { MailError, handleMailApi, handleRunnerApi } from './mail.mjs';
 
 export const API_PREFIX = '/api/tm/';
 const EVENT_ID = 1;
@@ -246,6 +246,7 @@ async function route(request, env, ctx) {
 
   if (path === 'login' && method === 'POST') return login(request, env, ctx);
   if (path === 'logout' && method === 'POST') return logout(request, env);
+  if (path.startsWith('mail/runner/')) return handleRunnerApi(request, env, path);
 
   const username = await currentUser(request, env);
   if (!username) throw new HttpError(401, 'Please log in');

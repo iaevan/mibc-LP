@@ -95,15 +95,19 @@ Leave out `--remote` to use the local development database with `npm run build` 
 
 ### Ticket emails
 
-The **Mail** tab sends each person the orientation invitation with their banner ticket attached, from `info@nsumibc.online` through Hostinger SMTP. A cron trigger runs the Worker once a minute and sends at most one email per run, so a list of 140 takes about 140 minutes and the domain is not flagged for bulk sending. Test users always go first. The tab shows a progress bar, the time left, and every person's status, and it can pause, resume, retry failed emails, send the test emails again, and delete all test data.
+The **Mail** tab sends each person the orientation invitation with their banner ticket attached, from `info@nsumibc.online` through Hostinger SMTP, at most one email per minute so the domain is not flagged for bulk sending. A list of 140 takes about 140 minutes. Test users always go first. The tab shows a progress bar, the time left, and every person's status, and it can pause, resume, retry failed emails, send the test emails again, and delete all test data.
 
-- `worker/mail.mjs` holds the queue and the sender; `worker/mail-template.mjs` holds the subject and body. Delivery state lives in the `attendees` table (`mail_status`, `mail_error`, `mail_sent_at`) and the `mail_campaign` row (`migrations/0002_mail.sql`).
+Cloudflare Workers cannot send through Hostinger: its mail servers sit on Cloudflare IPs, which Worker sockets may not connect to. So the Worker keeps the queue and the GitHub Actions workflow `.github/workflows/mail-sender.yml` does the sending. It runs every 10 minutes (or on demand from the Actions tab), exits at once unless sending was started in the Mail tab, and otherwise loops: ask the Worker for the next person, send, report the result, wait out the minute.
+
+- `worker/mail.mjs` holds the queue and the sender API (`/api/tm/mail/runner/*`); `worker/mail-template.mjs` holds the subject and body; `scripts/mail-runner/send.mjs` is the sender. Delivery state lives in the `attendees` table (`mail_status`, `mail_error`, `mail_sent_at`) and the `mail_campaign` row (`migrations/0002_mail.sql`).
 - Ticket images are stored in the KV namespace bound as `TICKET_IMAGES`, keyed by ticket code.
 - If the mailbox rejects the login or the connection fails, sending pauses and the person stays in the queue. Three recipient failures in a row also pause it. A send that never reported back is marked failed rather than retried, so nobody gets the email twice; check the inbox before retrying it.
-- The mailbox password is a Worker secret, never stored in the repo. Set it once, and again whenever the password changes:
+- This repository is public, and so are its Actions logs. The sender logs only queue row numbers, never names or addresses.
+- Secrets, never stored in the repo: `MAIL_RUNNER_TOKEN` on both the Worker and GitHub, and `SMTP_PASSWORD` on GitHub. Set them once (and `SMTP_PASSWORD` again whenever the mailbox password changes):
 
 ```sh
-npx wrangler secret put SMTP_PASSWORD
+T=$(openssl rand -hex 32) && printf %s "$T" | npx wrangler secret put MAIL_RUNNER_TOKEN && printf %s "$T" | gh secret set MAIL_RUNNER_TOKEN && unset T
+gh secret set SMTP_PASSWORD
 ```
 
 Prepare tickets before sending:
