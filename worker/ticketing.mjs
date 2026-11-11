@@ -1,6 +1,7 @@
 import {
   attendeesFromCsv, cleanAttendee, createToken, normalizeToken, randomHex, sha256Hex, verifyPassword,
 } from './ticketing-shared.mjs';
+import { MailError, handleMailApi } from './mail.mjs';
 
 export const API_PREFIX = '/api/tm/';
 const EVENT_ID = 1;
@@ -254,6 +255,10 @@ async function route(request, env, ctx) {
   if (path === 'event' && method === 'PATCH') return updateEvent(request, env);
   if (path === 'attendees' && method === 'POST') return addAttendee(request, env);
   if (path === 'attendees/import' && method === 'POST') return importAttendees(request, env);
+  if (path.startsWith('mail/')) {
+    const response = await handleMailApi(request, env, path, username);
+    if (response) return response;
+  }
 
   const match = path.match(/^attendees\/(\d+)(\/attendance)?$/);
   if (match && match[2] && method === 'POST') return setAttendance(request, env, Number(match[1]), username);
@@ -267,7 +272,7 @@ export async function handleTicketApi(request, env, ctx) {
     if (!env.DB) throw new HttpError(503, 'Ticket database is not connected');
     return await route(request, env, ctx);
   } catch (error) {
-    if (error instanceof HttpError) return json({ error: error.message }, error.status);
+    if (error instanceof HttpError || error instanceof MailError) return json({ error: error.message }, error.status);
     console.error('Ticket API error', error);
     return json({ error: 'Something went wrong. Try again.' }, 500);
   }

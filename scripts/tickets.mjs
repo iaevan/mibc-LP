@@ -2,8 +2,9 @@
 // Ticket tools for organizers. Everything this writes goes to tickets/, which
 // is gitignored because it holds attendee details, QR codes and the template.
 //
-//   npm run tickets -- import <file.csv> [--remote]
+//   npm run tickets -- import <file.csv> [--test] [--remote]
 //   npm run tickets -- render [--remote] [--template tickets/template.webp]
+//   npm run tickets -- upload [--remote]
 //   npm run tickets -- organizer <id> [--password <password>] [--remote]
 //
 // Without --remote the commands use the local development database.
@@ -62,9 +63,11 @@ async function importCsv() {
   if (error) throw new Error(error);
   const before = query(`SELECT COUNT(*) AS count FROM attendees WHERE event_id = ${EVENT_ID}`)[0]?.count ?? 0;
   const now = Date.now();
+  // Test users get their ticket email first and can be deleted together from the Mail tab.
+  const source = args.includes('--test') ? 'test' : 'csv';
   const statements = [];
   for (let start = 0; start < attendees.length; start += 200) {
-    const values = attendees.slice(start, start + 200).map(attendee => `(${EVENT_ID}, '${createToken()}', ${sqlText(attendee.name)}, ${sqlText(attendee.studentId)}, ${sqlText(attendee.email)}, 'csv', ${now})`);
+    const values = attendees.slice(start, start + 200).map(attendee => `(${EVENT_ID}, '${createToken()}', ${sqlText(attendee.name)}, ${sqlText(attendee.studentId)}, ${sqlText(attendee.email)}, '${source}', ${now})`);
     statements.push(`INSERT OR IGNORE INTO attendees (event_id, token, name, student_id, email, source, created_at) VALUES\n${values.join(',\n')};`);
   }
   if (statements.length) await runSql(statements);
@@ -184,6 +187,51 @@ async function render() {
   console.log(`QR square found at x ${box.left}, y ${box.top}, ${box.width} x ${box.height}px.`);
 }
 
+// Uploads the rendered banner tickets to the TICKET_IMAGES KV namespace, keyed
+// by ticket code, so the Worker can attach them to the ticket emails.
+async function upload() {
+  const outDir = path.resolve(option('--out') ?? path.join(ticketsDir, 'output'));
+  const indexFile = path.join(outDir, 'tickets.csv');
+  if (!existsSync(indexFile)) throw new Error('Run the render command first.');
+  const [, ...rows] = (await readFile(indexFile, 'utf8')).trim().split('\n').map(line => {
+    const cells = [];
+    let cell = '';
+    let quoted = false;
+    for (let index = 0; index < line.length; index += 1) {
+      const char = line[index];
+      if (quoted) {
+        if (char === '"' && line[index + 1] === '"') { cell += '"'; index += 1; }
+        else if (char === '"') quoted = false;
+        else cell += char;
+      } else if (char === '"') quoted = true;
+      else if (char === ',') { cells.push(cell); cell = ''; }
+      else cell += char;
+    }
+    cells.push(cell);
+    return cells;
+  });
+  const known = new Set(query(`SELECT token FROM attendees WHERE event_id = ${EVENT_ID}`).map(row => row.token));
+  const items = rows.map(cells => ({ token: cells[4], file: path.join(outDir, cells[5]) })).filter(item => known.has(item.token) && existsSync(item.file));
+  if (!items.length) throw new Error('No rendered tickets match the database. Render again with the same --remote setting.');
+
+  const batchFile = path.join(ticketsDir, '.kv-batch.json');
+  try {
+    for (let start = 0; start < items.length; start += 25) {
+      const batch = items.slice(start, start + 25);
+      const entries = await Promise.all(batch.map(async item => ({ key: item.token, value: (await readFile(item.file)).toString('base64'), base64: true })));
+      await writeFile(batchFile, JSON.stringify(entries));
+      execFileSync('npx', ['wrangler', 'kv', 'bulk', 'put', batchFile, '--binding', 'TICKET_IMAGES', remote ? '--remote' : '--local'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
+      const tokens = batch.map(item => sqlText(item.token)).join(', ');
+      await runSql([`UPDATE attendees SET ticket_ready_at = ${Date.now()} WHERE event_id = ${EVENT_ID} AND token IN (${tokens});`]);
+      console.log(`Uploaded ${Math.min(start + 25, items.length)} of ${items.length}`);
+    }
+  } finally {
+    await rm(batchFile, { force: true });
+  }
+  const missing = query(`SELECT name FROM attendees WHERE event_id = ${EVENT_ID} AND email IS NOT NULL AND ticket_ready_at IS NULL`);
+  console.log(`${remote ? 'Remote' : 'Local'}: ${items.length} ticket images uploaded.${missing.length ? ` Still missing: ${missing.map(row => row.name).join(', ')}` : ''}`);
+}
+
 function readablePassword() {
   const words = [createToken(), createToken()].join('').toLowerCase();
   return `${words.slice(0, 4)}-${words.slice(4, 8)}-${words.slice(8, 12)}-${words.slice(12, 16)}`;
@@ -206,9 +254,10 @@ async function organizer() {
 try {
   if (command === 'import') await importCsv();
   else if (command === 'render') await render();
+  else if (command === 'upload') await upload();
   else if (command === 'organizer') await organizer();
   else {
-    console.log('Usage:\n  npm run tickets -- import <file.csv> [--remote]\n  npm run tickets -- render [--remote] [--template <file>]\n  npm run tickets -- organizer <id> [--password <password>] [--remote]');
+    console.log('Usage:\n  npm run tickets -- import <file.csv> [--test] [--remote]\n  npm run tickets -- render [--remote] [--template <file>]\n  npm run tickets -- upload [--remote]\n  npm run tickets -- organizer <id> [--password <password>] [--remote]');
     process.exitCode = command ? 1 : 0;
   }
 } catch (error) {

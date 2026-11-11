@@ -96,7 +96,7 @@
 
 .tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   border-top: 1px solid var(--line);
   background: rgba(26, 7, 12, .98);
   padding-bottom: env(safe-area-inset-bottom);
@@ -242,6 +242,24 @@
 
 .account { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 8px; color: var(--muted); font-size: .9rem; }
 .account b { color: var(--ink); }
+
+/* Mail queue */
+.mailAlert { margin: 0; padding: 12px 14px; border-radius: 12px; background: #4a3410; color: #ffd98a; font-size: .92rem; line-height: 1.5; overflow-wrap: anywhere; }
+.mailAlert code, .hint code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: .85em; }
+.mailState { display: inline-block; margin-right: 4px; padding: 2px 9px; border-radius: 99px; font-size: .78rem; font-weight: 700; background: var(--surface-2); color: var(--ink); }
+.mailState[data-state='running'] { background: rgba(31, 174, 108, .18); color: #7ee2b0; }
+.mailState[data-state='paused'] { background: rgba(240, 166, 35, .18); color: #ffd98a; }
+.mailState[data-state='done'] { background: rgba(31, 174, 108, .18); color: #7ee2b0; }
+.mailMeta { margin: 10px 0 0; color: var(--muted); font-size: .88rem; line-height: 1.5; }
+.mailMeta b { color: var(--ink); }
+.mailActions { display: grid; gap: 8px; }
+@media (min-width: 640px) { .mailActions { grid-template-columns: repeat(2, 1fr); } }
+.mailRow { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; }
+.mailError { color: #ff9aa0 !important; white-space: normal !important; }
+.testTag { margin-left: 8px; padding: 1px 7px; border-radius: 6px; font-size: .7rem; font-weight: 700; vertical-align: 2px; background: #3d2a55; color: #d8c2ff; }
+.pill[data-mail='sent'] { background: rgba(31, 174, 108, .18); color: #7ee2b0; }
+.pill[data-mail='sending'] { background: rgba(240, 166, 35, .18); color: #ffd98a; }
+.pill[data-mail='failed'], .pill[data-mail='no_email'] { background: rgba(239, 74, 80, .18); color: #ff9aa0; }
 
 /* Person sheet */
 .sheetBackdrop { position: fixed; inset: 0; z-index: 10; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .6); animation: fade .15s ease-out; }

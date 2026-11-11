@@ -19,5 +19,24 @@
       "database_id": "bd7a867c-cfb6-4e0b-940f-50b4651fcffc",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  // Banner ticket images, keyed by ticket code. Uploaded with `npm run tickets -- upload`.
+  "kv_namespaces": [
+    {
+      "binding": "TICKET_IMAGES",
+      "id": "6bad1162f438487d927d9721d3288a42"
+    }
+  ],
+  // The mail queue sends one ticket email per minute.
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  // The mailbox password is the SMTP_PASSWORD secret: `npx wrangler secret put SMTP_PASSWORD`.
+  "vars": {
+    "SMTP_HOST": "smtp.hostinger.com",
+    "SMTP_PORT": "465",
+    "SMTP_SECURE": "true",
+    "SMTP_USER": "info@nsumibc.online",
+    "MAIL_FROM_NAME": "NSU MIBC"
+  }
 }

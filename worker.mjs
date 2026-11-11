@@ -1,9 +1,14 @@
+import { runMailTick } from './worker/mail.mjs';
 import { API_PREFIX, handleTicketApi, serveTicketPage } from './worker/ticketing.mjs';
 
 const PREFIX = '/mibc-pulse';
 const PROJECT_TOKEN = 'phc_DbtF2v2rM5f4jj4quFvWzDebRTytBxvbhKNsLvgc2Zim';
 
 export default {
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(runMailTick(env));
+  },
+
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname.startsWith(API_PREFIX)) return handleTicketApi(request, env, ctx);

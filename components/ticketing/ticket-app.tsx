@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { api, ApiError, formatTime, normalizeToken, type Attendee, type Bootstrap, type CheckInResult, type EventInfo } from './api';
 import { Dashboard } from './dashboard';
+import { MailPanel } from './mail';
 import { signal } from './feedback';
 import { Scanner } from './scanner';
 import styles from './ticketing.module.css';
@@ -28,7 +29,7 @@ export function TicketApp() {
   const [username, setUsername] = useState('');
   const [event, setEvent] = useState<EventInfo | null>(null);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
-  const [tab, setTab] = useState<'scan' | 'event'>('scan');
+  const [tab, setTab] = useState<'scan' | 'event' | 'mail'>('scan');
   const [overlay, setOverlay] = useState<Overlay | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [offline, setOffline] = useState(false);
@@ -235,6 +236,11 @@ export function TicketApp() {
             />
           </section>
         )}
+        {tab === 'mail' && (
+          <section className={`${styles.panel} ${styles.scroll}`}>
+            <MailPanel active={tab === 'mail'} onUnauthorized={signedOut} />
+          </section>
+        )}
       </main>
 
       <nav className={styles.tabs} aria-label="Ticket desk sections">
@@ -242,9 +248,13 @@ export function TicketApp() {
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10" /></svg>
           Scan
         </button>
-        <button type="button" aria-current={tab === 'event' ? 'page' : undefined} onClick={() => setTab('event')}>
+        <button type="button" aria-current={tab === 'event' ? 'page' : undefined} onClick={() => { setTab('event'); void load(); }}>
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
           Event
+        </button>
+        <button type="button" aria-current={tab === 'mail' ? 'page' : undefined} onClick={() => { setTab('mail'); }}>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+          Mail
         </button>
       </nav>
     </div>

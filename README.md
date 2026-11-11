@@ -93,6 +93,29 @@ npm run tickets -- render --remote                             # make banner tic
 
 Leave out `--remote` to use the local development database with `npm run build` and `npm run cloudflare:dev`. The render command finds the white square on `tickets/template.png` (or `.jpg`/`.webp`), puts the QR inside it, the person's name above it and their student ID below it. `tickets/output/tickets.csv` maps each ticket file to its person and code for sending. People added from the dashboard get a plain QR pass from their detail sheet, or run the render command again to make their banner ticket. Importing the same CSV again skips student IDs that are already registered.
 
+### Ticket emails
+
+The **Mail** tab sends each person the orientation invitation with their banner ticket attached, from `info@nsumibc.online` through Hostinger SMTP. A cron trigger runs the Worker once a minute and sends at most one email per run, so a list of 140 takes about 140 minutes and the domain is not flagged for bulk sending. Test users always go first. The tab shows a progress bar, the time left, and every person's status, and it can pause, resume, retry failed emails, send the test emails again, and delete all test data.
+
+- `worker/mail.mjs` holds the queue and the sender; `worker/mail-template.mjs` holds the subject and body. Delivery state lives in the `attendees` table (`mail_status`, `mail_error`, `mail_sent_at`) and the `mail_campaign` row (`migrations/0002_mail.sql`).
+- Ticket images are stored in the KV namespace bound as `TICKET_IMAGES`, keyed by ticket code.
+- If the mailbox rejects the login or the connection fails, sending pauses and the person stays in the queue. Three recipient failures in a row also pause it. A send that never reported back is marked failed rather than retried, so nobody gets the email twice; check the inbox before retrying it.
+- The mailbox password is a Worker secret, never stored in the repo. Set it once, and again whenever the password changes:
+
+```sh
+npx wrangler secret put SMTP_PASSWORD
+```
+
+Prepare tickets before sending:
+
+```sh
+npm run tickets -- import tickets/test-users.csv --test --remote   # test users (Name, Email columns); deleted together from the Mail tab
+npm run tickets -- render --remote                                 # banner tickets for everyone, including test users
+npm run tickets -- upload --remote                                 # upload the tickets so the Worker can attach them
+```
+
+Run `render` and `upload` again after adding people. Sending will not start while anyone in the queue has no uploaded ticket.
+
 ## Change the recruitment details
 
 - `lib/content.ts` holds the **FORM_URL**, FAQs, discipline copy, and layout links. Change FORM_URL once to update all application links.
