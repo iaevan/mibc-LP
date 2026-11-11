@@ -55,7 +55,7 @@ const scopeFilter = "(? = 'all' OR source = 'test')";
 
 async function status(env) {
   const campaign = await getCampaign(env);
-  const rows = await env.DB.prepare(`SELECT id, name, email, source, mail_status, mail_attempts, mail_error, mail_sent_at, ticket_ready_at
+  const rows = await env.DB.prepare(`SELECT id, name, email, source, mail_status, mail_attempts, mail_error, mail_started_at, mail_sent_at, ticket_ready_at
     FROM attendees WHERE event_id = ? ORDER BY source = 'test' DESC, id`).bind(EVENT_ID).all();
   const people = rows.results.map(row => ({
     id: row.id,
@@ -65,6 +65,7 @@ async function status(env) {
     status: row.email ? row.mail_status : 'no_email',
     attempts: row.mail_attempts,
     error: row.mail_error,
+    startedAt: row.mail_started_at,
     sentAt: row.mail_sent_at,
     ticketReady: Boolean(row.ticket_ready_at),
   }));
