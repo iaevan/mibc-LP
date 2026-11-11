@@ -16,7 +16,7 @@
     {
       "binding": "DB",
       "database_name": "mibc-tickets",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "bd7a867c-cfb6-4e0b-940f-50b4651fcffc",
       "migrations_dir": "migrations"
     }
   ]
