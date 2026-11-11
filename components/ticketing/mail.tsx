@@ -211,7 +211,7 @@ export function MailPanel({ active, onUnauthorized }: { active: boolean; onUnaut
   } else if (running) {
     liveMode = 'starting';
     liveTitle = senderOnline ? 'Sending the next email' : 'Waiting for the sender to start';
-    liveText = senderOnline ? 'Any second now.' : 'The GitHub sender starts every 10 minutes. The first email can take up to 10 minutes.';
+    liveText = senderOnline ? 'Any second now.' : 'If nothing happens within 2 minutes, open GitHub, Actions, Mail sender, and press Run workflow.';
   } else if (campaign.state === 'done') {
     liveMode = 'done';
     liveTitle = campaign.scope === 'test' ? 'Test emails finished' : 'All emails sent';
@@ -302,8 +302,8 @@ export function MailPanel({ active, onUnauthorized }: { active: boolean; onUnaut
             </dd>
           </div>
         </dl>
-        {running && !senderOnline && serverNow - campaign.updatedAt > 12 * 60_000 && (
-          <p className={styles.liveWarn}>The sender has been quiet for a while. It restarts every 10 minutes. If nothing changes after that, open the Mail sender workflow on GitHub Actions and press Run workflow.</p>
+        {running && !senderOnline && serverNow - campaign.updatedAt > 2 * 60_000 && (
+          <p className={styles.liveWarn}>The sender is not running. GitHub's 10 minute schedule is often late, so start it by hand: open the repository on GitHub, then Actions, Mail sender, Run workflow. One run sends the whole list.</p>
         )}
       </section>
 

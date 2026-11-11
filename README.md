@@ -110,7 +110,7 @@ T=$(openssl rand -hex 32) && printf %s "$T" | npx wrangler secret put MAIL_RUNNE
 gh secret set SMTP_PASSWORD
 ```
 
-Checking progress after pressing **Send to everyone**: keep the Mail tab open. The card at the top says who is being sent to now or counts down to the next email, shows whether the sender is online, and fills the progress bar. A pop-up appears for every email sent or failed, **Recent activity** lists them, and the **Problems** filter shows failures with the reason. The first email can take up to 10 minutes while the GitHub sender starts. GitHub's Actions tab (workflow **Mail sender**) shows the sender's run and log; **Run workflow** there starts it at once.
+Checking progress after pressing **Send to everyone**: keep the Mail tab open. The card at the top says who is being sent to now or counts down to the next email, shows whether the sender is online, and fills the progress bar. A pop-up appears for every email sent or failed, **Recent activity** lists them, and the **Problems** filter shows failures with the reason. GitHub's 10 minute schedule is often late or skipped, so after pressing Send, open GitHub's Actions tab, choose **Mail sender** and press **Run workflow** (or run `gh workflow run mail-sender.yml`). One run lasts up to 5.5 hours, enough for the whole list.
 
 Prepare tickets before sending:
 
