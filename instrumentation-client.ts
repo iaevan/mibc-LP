@@ -6,7 +6,10 @@ import { FORM_URL } from './lib/content';
 const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN || 'phc_DbtF2v2rM5f4jj4quFvWzDebRTytBxvbhKNsLvgc2Zim';
 const host = `${window.location.origin}/mibc-pulse`;
 
-if (['nsumibc.online', 'www.nsumibc.online'].includes(window.location.hostname)) {
+// The organizer ticket desk shows attendee details, so it never loads analytics.
+const ticketDesk = window.location.pathname.startsWith('/ticketmanagement');
+
+if (['nsumibc.online', 'www.nsumibc.online'].includes(window.location.hostname) && !ticketDesk) {
   posthog.init(token, {
     api_host: host,
     ui_host: 'https://us.posthog.com',

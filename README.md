@@ -70,6 +70,29 @@ This project uses no request-time Next.js features.
 
 Official reference: https://developers.cloudflare.com/pages/framework-guides/nextjs/deploy-a-static-nextjs-site/
 
+## Ticket desk (event check-in)
+
+Organizers sign in at `https://nsumibc.online/ticketmanagement/` on their phones. The **Scan** tab opens the rear camera and keeps it running. Each ticket QR is checked against the attendee list on the phone first, so the result card appears instantly; the check-in then syncs to the server. A card stays for 5 seconds: green for checked in, amber for already checked in (with the first scan time and organizer), red for unknown codes. Scans made while offline are saved on the phone and sync later. The **Event** tab edits the event name, shows attendance numbers, lists everyone with search and filters, marks people present by hand, adds people one at a time or from a CSV, exports attendance as CSV, and shows or downloads any person's QR.
+
+How it works:
+
+- `worker/ticketing.mjs` serves the `/api/tm/*` API from the existing Worker, backed by the Cloudflare D1 database `mibc-tickets` (binding `DB`). The schema is in `migrations/`.
+- QR codes hold only a random 12 character ticket code, never personal details. It fits a version 1 QR code, the smallest and fastest to scan, and it cannot be guessed or forged.
+- Organizer passwords are stored as PBKDF2 hashes. Sessions are HttpOnly cookies that last 24 hours. Repeated wrong passwords are blocked for 15 minutes.
+- The page is not indexed, loads no analytics, and is the only page allowed to use the camera.
+- `components/ticketing/` holds the organizer app. Scanning uses the browser's built-in QR detector where it exists and `jsQR` on iPhone.
+
+Local tools (all output goes to the gitignored `tickets/` folder, which holds attendee data, the banner template, rendered tickets and organizer logins; never commit it):
+
+```sh
+npm run db:migrate:remote                                      # create or update the database tables
+npm run tickets -- organizer <id> --remote                     # add an organizer; login saved in tickets/organizer-logins.txt
+npm run tickets -- import tickets/attendees.csv --remote       # add people from a CSV (Name, ID, Email columns)
+npm run tickets -- render --remote                             # make banner tickets in tickets/output/
+```
+
+Leave out `--remote` to use the local development database with `npm run build` and `npm run cloudflare:dev`. The render command finds the white square on `tickets/template.png` (or `.jpg`/`.webp`), puts the QR inside it, the person's name above it and their student ID below it. `tickets/output/tickets.csv` maps each ticket file to its person and code for sending. People added from the dashboard get a plain QR pass from their detail sheet, or run the render command again to make their banner ticket. Importing the same CSV again skips student IDs that are already registered.
+
 ## Change the recruitment details
 
 - `lib/content.ts` holds the **FORM_URL**, FAQs, discipline copy, and layout links. Change FORM_URL once to update all application links.

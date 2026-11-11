@@ -9,3 +9,7 @@ out/
 .dev.vars.*
 .env
 .env.*
+
+# Ticketing: attendee lists, QR tickets, templates and organizer logins stay local.
+tickets/
+*.attendees.csv

@@ -1,9 +1,13 @@
+import { API_PREFIX, handleTicketApi, serveTicketPage } from './worker/ticketing.mjs';
+
 const PREFIX = '/mibc-pulse';
 const PROJECT_TOKEN = 'phc_DbtF2v2rM5f4jj4quFvWzDebRTytBxvbhKNsLvgc2Zim';
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith(API_PREFIX)) return handleTicketApi(request, env, ctx);
+    if (url.pathname === '/ticketmanagement' || url.pathname.startsWith('/ticketmanagement/')) return serveTicketPage(request, env);
     if (!url.pathname.startsWith(`${PREFIX}/`)) return env.ASSETS.fetch(request);
 
     const path = url.pathname.slice(PREFIX.length);

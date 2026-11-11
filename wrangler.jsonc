@@ -7,9 +7,17 @@
   "workers_dev": true,
   "assets": {
     "binding": "ASSETS",
-    "run_worker_first": ["/mibc-pulse/*"],
+    "run_worker_first": ["/mibc-pulse/*", "/api/tm/*", "/ticketmanagement", "/ticketmanagement/*"],
     "directory": "./out",
     "html_handling": "force-trailing-slash",
     "not_found_handling": "404-page"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mibc-tickets",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ]
 }
