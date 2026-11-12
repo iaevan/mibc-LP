@@ -112,7 +112,31 @@ async function deleteTests(env) {
   return json({ ...data, deleted: tests.results.length });
 }
 
+// Sends one person's ticket email again, for example after fixing their address.
+async function resend(request, env, username) {
+  const body = await readBody(request);
+  const id = Number(body.id);
+  if (!Number.isInteger(id)) throw new MailError(400, 'Missing id');
+  const person = await env.DB.prepare('SELECT email, mail_status, ticket_ready_at FROM attendees WHERE id = ? AND event_id = ?').bind(id, EVENT_ID).first();
+  if (!person) throw new MailError(404, 'Attendee not found');
+  if (!person.email) throw new MailError(409, 'Add an email address first');
+  if (!person.ticket_ready_at) throw new MailError(409, 'This person has no banner ticket yet');
+  if (person.mail_status === 'sending') throw new MailError(409, 'Their email is being sent right now');
+  if (!runnerReady(env)) throw new MailError(409, 'The MAIL_RUNNER_TOKEN secret is not set on the Worker yet.');
+  const campaign = await getCampaign(env);
+  const statements = [env.DB.prepare(`UPDATE attendees SET mail_status = 'pending', mail_error = NULL, mail_sent_at = NULL, mail_claim = NULL
+    WHERE id = ? AND event_id = ?`).bind(id, EVENT_ID)];
+  // A finished queue starts again for this person; a paused one stays paused.
+  if (campaign.state === 'done' || (campaign.state === 'running' && campaign.scope === 'test')) {
+    statements.push(setCampaign(env, { state: 'running', scope: 'all', failures_in_row: 0, last_error: null }, username));
+  }
+  await env.DB.batch(statements);
+  const after = await getCampaign(env);
+  return json({ queued: true, state: after.state });
+}
+
 export async function handleMailApi(request, env, path, username) {
+  if (path === 'mail/resend' && request.method === 'POST') return resend(request, env, username);
   const method = request.method;
   if (path === 'mail/status' && method === 'GET') return status(env);
   if (path === 'mail/start' && method === 'POST') return start(request, env, username);

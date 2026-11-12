@@ -72,7 +72,7 @@ Official reference: https://developers.cloudflare.com/pages/framework-guides/nex
 
 ## Ticket desk (event check-in)
 
-Organizers sign in at `https://nsumibc.online/ticketmanagement/` on their phones. The **Scan** tab opens the rear camera and keeps it running. Each ticket QR is checked against the attendee list on the phone first, so the result card appears instantly; the check-in then syncs to the server. A card stays for 5 seconds: green for checked in, amber for already checked in (with the first scan time and organizer), red for unknown codes. Scans made while offline are saved on the phone and sync later. The **Event** tab edits the event name, shows attendance numbers, lists everyone with search and filters, marks people present by hand, adds people one at a time or from a CSV, exports attendance as CSV, and shows or downloads any person's QR.
+Organizers sign in at `https://nsumibc.online/ticketmanagement/` on their phones. The **Scan** tab opens the rear camera and keeps it running. Each ticket QR is checked against the attendee list on the phone first, so the result card appears instantly; the check-in then syncs to the server. A card stays for 5 seconds: green for checked in, amber for already checked in (with the first scan time and organizer), red for unknown codes. Scans made while offline are saved on the phone and sync later. The **Event** tab edits the event name, shows attendance numbers, lists everyone with search and filters, marks people present by hand, adds people one at a time or from a CSV, exports attendance as CSV, and shows or downloads any person's QR. Tap a person, then **Edit details** to correct a name, student ID or email: a new name or ID rebuilds their banner ticket in the browser from the stored template (the QR code stays the same), and **Resend ticket email** queues just that person for the mail sender.
 
 How it works:
 
@@ -118,6 +118,7 @@ Prepare tickets before sending:
 npm run tickets -- import tickets/test-users.csv --test --remote   # test users (Name, Email columns); deleted together from the Mail tab
 npm run tickets -- render --remote                                 # banner tickets for everyone, including test users
 npm run tickets -- upload --remote                                 # upload the tickets so the Worker can attach them
+npm run tickets -- upload-template --remote                        # store the banner template so the dashboard can rebuild edited tickets
 ```
 
 Run `render` and `upload` again after adding people. Sending will not start while anyone in the queue has no uploaded ticket.

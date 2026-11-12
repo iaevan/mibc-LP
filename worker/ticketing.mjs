@@ -13,7 +13,9 @@ const IMPORT_CHUNK = 500;
 // Compared against when a username does not exist, so timing does not reveal it.
 const DUMMY_HASH = 'pbkdf2_sha256$100000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
-const ATTENDEE_COLUMNS = 'id, token, name, student_id, email, source, created_at, checked_in_at, checked_in_by';
+const ATTENDEE_COLUMNS = 'id, token, name, student_id, email, source, created_at, checked_in_at, checked_in_by, mail_status, mail_sent_at, ticket_ready_at';
+const MAX_TICKET_BYTES = 3 * 1024 * 1024;
+const TEMPLATE_KEY = 'template';
 
 class HttpError extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -42,6 +44,9 @@ function toAttendee(row) {
     createdAt: row.created_at,
     checkedInAt: row.checked_in_at,
     checkedInBy: row.checked_in_by,
+    mailStatus: row.mail_status ?? null,
+    mailSentAt: row.mail_sent_at ?? null,
+    ticketReady: Boolean(row.ticket_ready_at),
   };
 }
 
@@ -227,6 +232,58 @@ async function setAttendance(request, env, id, username) {
   return json({ attendee: toAttendee(row) });
 }
 
+// Corrects a person's details. A new name or student ID makes the banner ticket
+// out of date, so it is marked not ready until the dashboard uploads a new one.
+async function updateAttendee(request, env, id) {
+  const body = await readJson(request);
+  const { attendee, error } = cleanAttendee(body);
+  if (error) throw new HttpError(400, error);
+  const current = await env.DB.prepare('SELECT name, student_id FROM attendees WHERE id = ? AND event_id = ?').bind(id, EVENT_ID).first();
+  if (!current) throw new HttpError(404, 'Attendee not found');
+  const ticketChanged = current.name !== attendee.name || (current.student_id ?? null) !== attendee.studentId;
+  try {
+    const row = await env.DB.prepare(`UPDATE attendees SET name = ?, student_id = ?, email = ?,
+        ticket_ready_at = CASE WHEN ? THEN NULL ELSE ticket_ready_at END
+      WHERE id = ? AND event_id = ? RETURNING ${ATTENDEE_COLUMNS}`)
+      .bind(attendee.name, attendee.studentId, attendee.email, ticketChanged ? 1 : 0, id, EVENT_ID).first();
+    return json({ attendee: toAttendee(row), ticketChanged });
+  } catch (problem) {
+    if (String(problem?.message).includes('UNIQUE')) throw new HttpError(409, `Student ID ${attendee.studentId} belongs to someone else on the list`);
+    throw problem;
+  }
+}
+
+async function ticketTemplate(env) {
+  const image = env.TICKET_IMAGES ? await env.TICKET_IMAGES.get(TEMPLATE_KEY, 'arrayBuffer') : null;
+  if (!image) throw new HttpError(404, 'The ticket template is not uploaded yet. Run: npm run tickets -- upload-template --remote');
+  const head = new Uint8Array(image, 0, 4);
+  const type = head[0] === 0x89 ? 'image/png' : head[0] === 0xff ? 'image/jpeg' : 'image/webp';
+  return new Response(image, { headers: { 'content-type': type, 'cache-control': 'no-store' } });
+}
+
+async function getTicket(env, id) {
+  const row = await env.DB.prepare('SELECT token FROM attendees WHERE id = ? AND event_id = ?').bind(id, EVENT_ID).first();
+  const image = row && env.TICKET_IMAGES ? await env.TICKET_IMAGES.get(row.token, 'arrayBuffer') : null;
+  if (!image) throw new HttpError(404, 'No banner ticket for this person yet');
+  return new Response(image, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'no-store' } });
+}
+
+// Stores a banner ticket the dashboard rendered for one person.
+async function putTicket(request, env, id) {
+  if ((request.headers.get('content-type') || '') !== 'image/jpeg') throw new HttpError(415, 'Send a JPEG image');
+  const image = await request.arrayBuffer();
+  const bytes = new Uint8Array(image);
+  if (image.byteLength < 1000 || image.byteLength > MAX_TICKET_BYTES || bytes[0] !== 0xff || bytes[1] !== 0xd8) {
+    throw new HttpError(400, 'That is not a usable ticket image');
+  }
+  if (!env.TICKET_IMAGES) throw new HttpError(503, 'Ticket image storage is not connected');
+  const row = await env.DB.prepare('SELECT token FROM attendees WHERE id = ? AND event_id = ?').bind(id, EVENT_ID).first();
+  if (!row) throw new HttpError(404, 'Attendee not found');
+  await env.TICKET_IMAGES.put(row.token, image);
+  const updated = await env.DB.prepare(`UPDATE attendees SET ticket_ready_at = ? WHERE id = ? RETURNING ${ATTENDEE_COLUMNS}`).bind(Date.now(), id).first();
+  return json({ attendee: toAttendee(updated) });
+}
+
 async function deleteAttendee(env, id) {
   const result = await env.DB.prepare('DELETE FROM attendees WHERE id = ? AND event_id = ?').bind(id, EVENT_ID).run();
   if (!result.meta.changes) throw new HttpError(404, 'Attendee not found');
@@ -261,9 +318,15 @@ async function route(request, env, ctx) {
     if (response) return response;
   }
 
-  const match = path.match(/^attendees\/(\d+)(\/attendance)?$/);
-  if (match && match[2] && method === 'POST') return setAttendance(request, env, Number(match[1]), username);
-  if (match && !match[2] && method === 'DELETE') return deleteAttendee(env, Number(match[1]));
+  if (path === 'ticket-template' && method === 'GET') return ticketTemplate(env);
+
+  const match = path.match(/^attendees\/(\d+)(\/attendance|\/ticket)?$/);
+  const id = match ? Number(match[1]) : 0;
+  if (match && match[2] === '/attendance' && method === 'POST') return setAttendance(request, env, id, username);
+  if (match && match[2] === '/ticket' && method === 'GET') return getTicket(env, id);
+  if (match && match[2] === '/ticket' && method === 'PUT') return putTicket(request, env, id);
+  if (match && !match[2] && method === 'PATCH') return updateAttendee(request, env, id);
+  if (match && !match[2] && method === 'DELETE') return deleteAttendee(env, id);
 
   throw new HttpError(404, 'Not found');
 }

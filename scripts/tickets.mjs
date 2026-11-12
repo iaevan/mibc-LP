@@ -5,6 +5,7 @@
 //   npm run tickets -- import <file.csv> [--test] [--remote]
 //   npm run tickets -- render [--remote] [--template tickets/template.webp]
 //   npm run tickets -- upload [--remote]
+//   npm run tickets -- upload-template [--remote]
 //   npm run tickets -- organizer <id> [--password <password>] [--remote]
 //
 // Without --remote the commands use the local development database.
@@ -232,6 +233,14 @@ async function upload() {
   console.log(`${remote ? 'Remote' : 'Local'}: ${items.length} ticket images uploaded.${missing.length ? ` Still missing: ${missing.map(row => row.name).join(', ')}` : ''}`);
 }
 
+// Stores the banner template so the dashboard can rebuild a ticket after a
+// name or student ID is corrected.
+async function uploadTemplate() {
+  const file = await findTemplate();
+  execFileSync('npx', ['wrangler', 'kv', 'key', 'put', 'template', '--path', file, '--binding', 'TICKET_IMAGES', remote ? '--remote' : '--local'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
+  console.log(`${remote ? 'Remote' : 'Local'}: uploaded ${path.relative(root, file)} as the ticket template.`);
+}
+
 function readablePassword() {
   const words = [createToken(), createToken()].join('').toLowerCase();
   return `${words.slice(0, 4)}-${words.slice(4, 8)}-${words.slice(8, 12)}-${words.slice(12, 16)}`;
@@ -254,10 +263,11 @@ async function organizer() {
 try {
   if (command === 'import') await importCsv();
   else if (command === 'render') await render();
-  else if (command === 'upload') await upload();
+  else if (command === 'upload') { await upload(); await uploadTemplate(); }
+  else if (command === 'upload-template') await uploadTemplate();
   else if (command === 'organizer') await organizer();
   else {
-    console.log('Usage:\n  npm run tickets -- import <file.csv> [--test] [--remote]\n  npm run tickets -- render [--remote] [--template <file>]\n  npm run tickets -- upload [--remote]\n  npm run tickets -- organizer <id> [--password <password>] [--remote]');
+    console.log('Usage:\n  npm run tickets -- import <file.csv> [--test] [--remote]\n  npm run tickets -- render [--remote] [--template <file>]\n  npm run tickets -- upload [--remote]\n  npm run tickets -- upload-template [--remote]\n  npm run tickets -- organizer <id> [--password <password>] [--remote]');
     process.exitCode = command ? 1 : 0;
   }
 } catch (error) {

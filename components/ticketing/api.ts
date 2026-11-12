@@ -8,6 +8,9 @@ export type Attendee = {
   createdAt: number;
   checkedInAt: number | null;
   checkedInBy: string | null;
+  mailStatus?: 'pending' | 'sending' | 'sent' | 'failed' | null;
+  mailSentAt?: number | null;
+  ticketReady?: boolean;
 };
 
 export type EventInfo = { id: number; name: string; updatedAt: number };
