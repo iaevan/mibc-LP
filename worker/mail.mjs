@@ -254,7 +254,17 @@ async function report(request, env) {
       ]);
     }
   }
-  const after = await getCampaign(env);
+  // Finish as soon as the last email is reported, instead of a minute later
+  // when the sender would ask again and find the queue empty.
+  let after = await getCampaign(env);
+  if (after.state === 'running') {
+    const left = await env.DB.prepare(`SELECT COUNT(*) AS count FROM attendees WHERE event_id = ? AND email IS NOT NULL
+      AND mail_status IN ('pending', 'sending') AND (mail_status = 'sending' OR ${scopeFilter})`).bind(EVENT_ID, after.scope).first();
+    if (!left?.count) {
+      await setCampaign(env, { state: 'done' }).run();
+      after = { ...after, state: 'done' };
+    }
+  }
   return json({ ok: true, stop: after.state !== 'running' });
 }
 

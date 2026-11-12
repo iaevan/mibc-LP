@@ -204,6 +204,11 @@ export function MailPanel({ active, onUnauthorized }: { active: boolean; onUnaut
     liveMode = 'sending';
     liveTitle = `Sending to ${sending.name}`;
     liveText = sending.email ?? '';
+  } else if (running && queueLeft === 0) {
+    // Nothing left to send; the queue closes on the sender's next report.
+    liveMode = 'done';
+    liveTitle = 'All queued emails sent';
+    liveText = summary.failed ? `${summary.failed} could not be sent. See Problems below.` : 'Every email in the queue went out.';
   } else if (running && senderOnline && nextIn > 0) {
     liveMode = 'waiting';
     liveTitle = `Next email in ${clock(nextIn)}`;
