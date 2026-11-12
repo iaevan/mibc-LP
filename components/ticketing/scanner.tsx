@@ -41,9 +41,14 @@ export function Scanner({ active, onDecode, children }: { active: boolean; onDec
   const wantedRef = useRef(false);
   const [state, setState] = useState<'idle' | 'starting' | 'running' | 'error'>('idle');
   const [error, setError] = useState('');
+  const [zoom, setZoom] = useState<{ levels: number[]; value: number } | null>(null);
 
   useEffect(() => { onDecodeRef.current = onDecode; }, [onDecode]);
-  useEffect(() => { activeRef.current = active; }, [active]);
+  useEffect(() => {
+    activeRef.current = active;
+    // Coming back from another tab: make sure the preview is playing again.
+    if (active && streamRef.current) void videoRef.current?.play().catch(() => undefined);
+  }, [active]);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach(track => track.stop());
@@ -57,28 +62,60 @@ export function Scanner({ active, onDecode, children }: { active: boolean; onDec
     const context = canvas.getContext('2d', { willReadFrequently: true });
     let busy = false;
     let last = 0;
+    let lastStepAt = performance.now();
+    let attempt = 0;
     let useNative = Boolean(detector);
 
-    const decode = async () => {
+    // Reads a centre square of the camera frame with jsQR. `side` is in camera
+    // pixels and `target` is the size it is drawn at before decoding.
+    const readSquare = (side: number, target: number) => {
+      if (!context) return null;
       const width = video.videoWidth;
       const height = video.videoHeight;
-      if (!width || !height) return null;
+      if (canvas.width !== target) { canvas.width = target; canvas.height = target; }
+      context.imageSmoothingEnabled = true;
+      context.drawImage(video, (width - side) / 2, (height - side) / 2, side, side, 0, 0, target, target);
+      const image = context.getImageData(0, 0, target, target);
+      return jsQR(image.data, target, target, { inversionAttempts: 'dontInvert' })?.data ?? null;
+    };
+    // Whole guide area, shrunk for speed. Reads codes that fill a good part of the frame.
+    const readWide = () => {
+      const side = Math.round(Math.min(video.videoWidth, video.videoHeight) * 0.82);
+      return readSquare(side, Math.min(side, 640));
+    };
+    // Middle of the frame enlarged 2x. A ticket shown on a phone has a QR only about
+    // 1 cm wide; enlarging first lets jsQR read codes roughly half the size.
+    const readZoomed = () => {
+      const side = Math.min(480, video.videoWidth, video.videoHeight);
+      return readSquare(side, side * 2);
+    };
+
+    const decode = async () => {
+      if (!video.videoWidth || !video.videoHeight) return null;
+      attempt += 1;
       if (useNative && detector) {
         try {
           const codes = await detector.detect(video);
-          return codes[0]?.rawValue ?? null;
+          if (codes[0]?.rawValue) return codes[0].rawValue;
+          // The built-in detector found nothing: now and then give jsQR a try as well.
+          return attempt % 4 === 0 ? readZoomed() : null;
         } catch {
           useNative = false;
         }
       }
-      if (!context) return null;
-      // Decode only the centre square, where the guide frame is. Fewer pixels is faster.
-      const side = Math.round(Math.min(width, height) * 0.82);
-      const target = Math.min(side, 640);
-      if (canvas.width !== target) { canvas.width = target; canvas.height = target; }
-      context.drawImage(video, (width - side) / 2, (height - side) / 2, side, side, 0, 0, target, target);
-      const image = context.getImageData(0, 0, target, target);
-      return jsQR(image.data, target, target, { inversionAttempts: 'dontInvert' })?.data ?? null;
+      return attempt % 2 ? readZoomed() : readWide();
+    };
+
+    const tick = () => {
+      const now = performance.now();
+      lastStepAt = now;
+      if (busy || !activeRef.current || now - last < SCAN_INTERVAL || video.readyState < 2) return;
+      last = now;
+      busy = true;
+      decode()
+        .then(text => { if (text && streamRef.current === stream) onDecodeRef.current(text); })
+        .catch(() => undefined)
+        .finally(() => { busy = false; });
     };
 
     const schedule = () => {
@@ -90,18 +127,50 @@ export function Scanner({ active, onDecode, children }: { active: boolean; onDec
     function step() {
       if (streamRef.current !== stream) return;
       schedule();
-      const now = performance.now();
-      if (busy || !activeRef.current || now - last < SCAN_INTERVAL || video.readyState < 2) return;
-      last = now;
-      busy = true;
-      decode()
-        .then(text => { if (text && streamRef.current === stream) onDecodeRef.current(text); })
-        .catch(() => undefined)
-        .finally(() => { busy = false; });
+      tick();
     }
 
     schedule();
+    // Some browsers stop delivering frame callbacks after the video was hidden.
+    // Keep scanning on a timer whenever that happens.
+    const watchdog = setInterval(() => {
+      if (streamRef.current !== stream) { clearInterval(watchdog); return; }
+      if (performance.now() - lastStepAt > 250) tick();
+    }, 100);
   }, []);
+
+  // Zoom in a little where the camera allows it, so a small QR on a phone screen
+  // reads from a comfortable distance, and ask for continuous autofocus.
+  const applyZoom = useCallback(async (value: number) => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      await track.applyConstraints({ advanced: [{ zoom: value } as MediaTrackConstraintSet] });
+      setZoom(current => (current ? { ...current, value } : current));
+    } catch {
+      setZoom(null);
+    }
+  }, []);
+
+  const setupTrack = useCallback(async (track: MediaStreamTrack | undefined) => {
+    setZoom(null);
+    if (!track) return;
+    try {
+      const capabilities = (track.getCapabilities?.() ?? {}) as { zoom?: { min?: number; max?: number }; focusMode?: string[] };
+      if (capabilities.focusMode?.includes('continuous')) {
+        await track.applyConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] }).catch(() => undefined);
+      }
+      const min = capabilities.zoom?.min;
+      const max = capabilities.zoom?.max;
+      if (typeof min === 'number' && typeof max === 'number' && max >= min * 1.5) {
+        const levels = [1, 2, 3].map(level => min * level).filter(level => level <= max);
+        setZoom({ levels, value: min });
+        if (levels[1]) await applyZoom(levels[1]);
+      }
+    } catch {
+      setZoom(null);
+    }
+  }, [applyZoom]);
 
   const start = useCallback(async () => {
     unlockAudio();
@@ -117,7 +186,7 @@ export function Scanner({ active, onDecode, children }: { active: boolean; onDec
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
       });
       const video = videoRef.current;
       if (!video) { stream.getTracks().forEach(track => track.stop()); return; }
@@ -127,6 +196,7 @@ export function Scanner({ active, onDecode, children }: { active: boolean; onDec
       setState('running');
       void keepScreenOn();
       void loop(video, stream);
+      void setupTrack(stream.getVideoTracks()[0]);
       stream.getVideoTracks()[0]?.addEventListener('ended', () => {
         if (streamRef.current === stream && wantedRef.current && document.visibilityState === 'visible') void start();
       });
@@ -135,7 +205,7 @@ export function Scanner({ active, onDecode, children }: { active: boolean; onDec
       setState('error');
       setError(cameraError(problem));
     }
-  }, [loop, stop]);
+  }, [loop, setupTrack, stop]);
 
   // iOS stops the camera when the app is in the background. Bring it back on return.
   useEffect(() => {
@@ -155,6 +225,17 @@ export function Scanner({ active, onDecode, children }: { active: boolean; onDec
     <div className={styles.scanner} data-state={state}>
       <video ref={videoRef} className={styles.video} playsInline muted autoPlay aria-label="Camera preview" />
       {state === 'running' && <div className={styles.frame} aria-hidden="true"><span /><span /><span /><span /></div>}
+      {state === 'running' && <p className={styles.scanTip}>Small QR? Ask them to zoom in.</p>}
+      {state === 'running' && zoom && zoom.levels.length > 1 && (
+        <button
+          type="button"
+          className={styles.zoomButton}
+          aria-label="Change camera zoom"
+          onClick={() => void applyZoom(zoom.levels[(zoom.levels.indexOf(zoom.value) + 1) % zoom.levels.length])}
+        >
+          {Math.max(1, zoom.levels.indexOf(zoom.value) + 1)}x
+        </button>
+      )}
       {state !== 'running' && (
         <div className={styles.cameraPrompt}>
           <div className={styles.cameraIcon} aria-hidden="true">
