@@ -140,34 +140,7 @@ function base64(buffer) {
   return btoa(binary);
 }
 
-// Hands the next person to the sender. Returns { stop } when there is nothing
-// to do, { wait } when a send is still in flight, or the email to send.
-async function claim(env) {
-  const now = Date.now();
-  const campaign = await getCampaign(env);
-  if (campaign.state !== 'running') return json({ stop: true, state: campaign.state });
-  await setCampaign(env, { last_tick_at: now }).run();
-
-  // A send that never reported back may or may not have gone out. Mark it failed
-  // so a person checks the inbox before retrying, rather than sending twice.
-  await env.DB.prepare(`UPDATE attendees SET mail_status = 'failed', mail_error = ?
-    WHERE event_id = ? AND mail_status = 'sending' AND mail_started_at < ?`)
-    .bind('Interrupted while sending. Check the inbox before retrying.', EVENT_ID, now - STUCK_MS).run();
-
-  const person = await env.DB.prepare(`UPDATE attendees SET mail_status = 'sending', mail_started_at = ?, mail_attempts = mail_attempts + 1, mail_error = NULL
-    WHERE id = (SELECT id FROM attendees WHERE event_id = ? AND email IS NOT NULL AND mail_status = 'pending' AND ${scopeFilter}
-      ORDER BY source = 'test' DESC, id LIMIT 1)
-    AND mail_status = 'pending'
-    AND NOT EXISTS (SELECT 1 FROM attendees WHERE event_id = ? AND mail_status = 'sending')
-    RETURNING id, token, name, email, source`).bind(now, EVENT_ID, campaign.scope, EVENT_ID).first();
-
-  if (!person) {
-    const busy = await env.DB.prepare("SELECT COUNT(*) AS count FROM attendees WHERE event_id = ? AND mail_status = 'sending'").bind(EVENT_ID).first();
-    if (busy?.count) return json({ wait: true });
-    await setCampaign(env, { state: 'done' }).run();
-    return json({ stop: true, state: 'done' });
-  }
-
+async function jobFor(env, person) {
   const image = env.TICKET_IMAGES ? await env.TICKET_IMAGES.get(person.token, 'arrayBuffer') : null;
   if (!image) {
     await env.DB.prepare("UPDATE attendees SET mail_status = 'failed', mail_error = ? WHERE id = ?")
@@ -183,6 +156,46 @@ async function claim(env) {
     html,
     attachment: { filename: ticketFileName(person.name), contentType: 'image/jpeg', base64: base64(image) },
   });
+}
+
+// Hands the next person to the sender. Returns { stop } when there is nothing
+// to do, { wait } when a send is still in flight, or the email to send.
+// The sender passes a claimId and repeats it when it did not get a usable
+// reply, so it receives the same person again rather than leaving them stuck.
+async function claim(request, env) {
+  const now = Date.now();
+  const body = await readBody(request);
+  const claimId = /^[0-9a-f-]{36}$/.test(String(body.claimId)) ? String(body.claimId) : null;
+  const campaign = await getCampaign(env);
+  if (campaign.state !== 'running') return json({ stop: true, state: campaign.state });
+  await setCampaign(env, { last_tick_at: now }).run();
+
+  if (claimId) {
+    const again = await env.DB.prepare(`SELECT id, token, name, email, source FROM attendees
+      WHERE event_id = ? AND mail_status = 'sending' AND mail_claim = ?`).bind(EVENT_ID, claimId).first();
+    if (again) return jobFor(env, again);
+  }
+
+  // A send that never reported back may or may not have gone out. Mark it failed
+  // so a person checks the inbox before retrying, rather than sending twice.
+  await env.DB.prepare(`UPDATE attendees SET mail_status = 'failed', mail_error = ?
+    WHERE event_id = ? AND mail_status = 'sending' AND mail_started_at < ?`)
+    .bind('Interrupted while sending. Check the inbox before retrying.', EVENT_ID, now - STUCK_MS).run();
+
+  const person = await env.DB.prepare(`UPDATE attendees SET mail_status = 'sending', mail_started_at = ?, mail_attempts = mail_attempts + 1, mail_error = NULL, mail_claim = ?
+    WHERE id = (SELECT id FROM attendees WHERE event_id = ? AND email IS NOT NULL AND mail_status = 'pending' AND ${scopeFilter}
+      ORDER BY source = 'test' DESC, id LIMIT 1)
+    AND mail_status = 'pending'
+    AND NOT EXISTS (SELECT 1 FROM attendees WHERE event_id = ? AND mail_status = 'sending')
+    RETURNING id, token, name, email, source`).bind(now, claimId, EVENT_ID, campaign.scope, EVENT_ID).first();
+
+  if (!person) {
+    const busy = await env.DB.prepare("SELECT COUNT(*) AS count FROM attendees WHERE event_id = ? AND mail_status = 'sending'").bind(EVENT_ID).first();
+    if (busy?.count) return json({ wait: true });
+    await setCampaign(env, { state: 'done' }).run();
+    return json({ stop: true, state: 'done' });
+  }
+  return jobFor(env, person);
 }
 
 // The sender reports each result. serverProblem means the mailbox or connection
@@ -223,7 +236,7 @@ async function report(request, env) {
 
 export async function handleRunnerApi(request, env, path) {
   if (!(await runnerAuthorized(request, env))) throw new MailError(401, 'Unauthorized');
-  if (path === 'mail/runner/claim' && request.method === 'POST') return claim(env);
+  if (path === 'mail/runner/claim' && request.method === 'POST') return claim(request, env);
   if (path === 'mail/runner/report' && request.method === 'POST') return report(request, env);
   throw new MailError(404, 'Not found');
 }

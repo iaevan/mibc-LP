@@ -29,9 +29,13 @@ async function call(path, body) {
         headers: { authorization: `Bearer ${env.MAIL_RUNNER_TOKEN}`, 'content-type': 'application/json' },
         body: JSON.stringify(body ?? {}),
       });
-      const data = await response.json().catch(() => ({}));
+      const raw = await response.text();
+      let data = null;
+      try { data = JSON.parse(raw); } catch { /* handled below */ }
       if (response.status === 401) throw Object.assign(new Error('The Worker rejected MAIL_RUNNER_TOKEN'), { fatal: true });
-      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      if (!response.ok) throw new Error(data?.error || `HTTP ${response.status}`);
+      // A cut off or non JSON reply must never be treated as a job.
+      if (!data || typeof data !== 'object') throw new Error(`Unreadable reply (HTTP ${response.status}, ${raw.length} bytes)`);
       return data;
     } catch (error) {
       if (error.fatal || attempt >= 5) throw error;
@@ -68,8 +72,23 @@ const transport = nodemailer.createTransport({
 
 let sent = 0;
 let lastSendAt = 0;
+const isJob = job => Number.isInteger(job.id) && Boolean(job.to?.email) && Boolean(job.attachment?.base64);
+
+// Asks for the next person. The same claimId is repeated on every retry, so if a
+// reply is lost the Worker hands back the same person instead of a new one.
+async function claimNext() {
+  const claimId = crypto.randomUUID();
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    const job = await call('claim', { claimId });
+    if (job.stop || job.wait || isJob(job)) return job;
+    console.warn(`Claim reply was incomplete, asking again (attempt ${attempt})`);
+    await sleep(attempt * 5000);
+  }
+  throw new Error('The Worker kept sending incomplete claim replies');
+}
+
 while (Date.now() < deadline) {
-  const job = await call('claim');
+  const job = await claimNext();
   if (job.stop) { console.log(`Queue is ${job.state}. Stopping.`); break; }
   if (job.wait) { await sleep(30_000); continue; }
 
