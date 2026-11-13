@@ -6,6 +6,7 @@ export const organization = {
   '@type': 'Organization',
   '@id': `${SITE_URL}/#organization`,
   name: CLUB_NAME,
+  email: 'info@nsumibc.online',
   alternateName: 'NSU MIBC',
   url: `${SITE_URL}/`,
   logo: { '@type': 'ImageObject', url: `${SITE_URL}/images/mibc-logo.webp`, width: 384, height: 275 },

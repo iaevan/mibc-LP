@@ -4,7 +4,7 @@ import './globals.css';
 
 const siteUrl = SITE_URL;
 const socialTitle = 'NSU MIBC | Envision Beyond Borders';
-const socialDescription = 'Explore the Marketing & International Business Club at North South University and discover our signature events.';
+const socialDescription = 'NSU MIBC is the Marketing & International Business Club at North South University. Explore MarXcellence, Innovade, Amelior, and Intra-Ignite.';
 const socialImage = {
   url: '/og/nsu-mibc.jpg',
   secureUrl: `${siteUrl}/og/nsu-mibc.jpg`,
