@@ -3,22 +3,22 @@ import { SITE_URL, structuredData } from '@/lib/site';
 import './globals.css';
 
 const siteUrl = SITE_URL;
-const socialTitle = 'MIBC Recruitment 10.0: Redefine Your Dimensions';
-const socialDescription = 'Explore MIBC Recruitment 10.0 at North South University. Discover the Marketing & International Business Club, our events, and how to register.';
+const socialTitle = 'NSU MIBC | Envision Beyond Borders';
+const socialDescription = 'Explore the Marketing & International Business Club at North South University and discover our signature events.';
 const socialImage = {
-  url: '/og/mibc-recruitment-10-v2.jpg',
-  secureUrl: `${siteUrl}/og/mibc-recruitment-10-v2.jpg`,
+  url: '/og/nsu-mibc.jpg',
+  secureUrl: `${siteUrl}/og/nsu-mibc.jpg`,
   width: 1200,
   height: 630,
   type: 'image/jpeg',
-  alt: 'MIBC Recruitment 10.0: Redefine Your Dimensions. Join the recruitment at North South University.',
+  alt: 'NSU MIBC: Envision Beyond Borders',
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: 'MIBC Recruitment 10.0 | North South University', template: '%s | NSU MIBC' },
+  title: { default: 'NSU MIBC | Marketing & International Business Club', template: '%s | NSU MIBC' },
   description: socialDescription,
-  applicationName: 'MIBC Recruitment 10.0',
+  applicationName: 'NSU MIBC',
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',

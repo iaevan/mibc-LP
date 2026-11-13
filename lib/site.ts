@@ -1,6 +1,6 @@
 export const SITE_URL = 'https://nsumibc.online';
 export const CLUB_NAME = 'Marketing & International Business Club';
-export const SITE_NAME = 'MIBC Recruitment 10.0';
+export const SITE_NAME = 'NSU MIBC';
 
 export const organization = {
   '@type': 'Organization',

@@ -1232,3 +1232,26 @@
     .club-motto h2 { font-size: min(clamp(2.7rem,10.5vw,5rem),24vw); }
   }
 }
+
+@layer responsive {
+  .showcase-footer-contact {
+    grid-column: 2;
+    justify-self: center;
+    display: grid;
+    justify-items: center;
+    gap: .5rem;
+    text-align: center;
+  }
+  .showcase-footer-contact p { margin: 0; }
+  .showcase-footer-contact .footer-socials { width: auto; padding: 0; }
+  .showcase-footer-contact > a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    text-decoration: underline;
+    text-underline-offset: .25em;
+  }
+  @media (max-width: 760px) {
+    .showcase-footer-contact { grid-column: 1 / -1; grid-row: 2; }
+  }
+}

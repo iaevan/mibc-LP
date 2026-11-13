@@ -18,12 +18,12 @@ export function Brand({ compact = false }: { compact?: boolean }) {
   return <a className={`brand${compact ? ' brand-compact' : ''}`} href="#top" aria-label="MIBC, back to top"><span className="brand-logo"><Image src="/images/mibc-logo.webp" alt="Marketing and International Business Club of North South University" width={384} height={275} priority={!compact} sizes="(max-width: 760px) 88px, 112px" /></span></a>;
 }
 
-export function Header({ theme }: { theme: Theme }) {
-  return <header className={`site-header header-${theme}`}><Brand /><nav aria-label="Page navigation" className="page-links"><a href="#annual-gatherings">Our Events</a><a className="header-cta" href={FORM_URL}>REGISTER NOW</a></nav></header>;
+export function Header({ theme, showcase }: { theme: Theme; showcase?: boolean }) {
+  return <header className={`site-header header-${theme}`}><Brand /><nav aria-label="Page navigation" className="page-links"><a href="#annual-gatherings">Our Events</a>{!showcase && <a className="header-cta" href={FORM_URL}>REGISTER NOW</a>}</nav></header>;
 }
 
-export function Shell({ theme, children }: { theme: Theme; active?: number; children: ReactNode }) {
-  return <div className={`site theme-${theme}`} id="top"><a className="skip-link" href="#main">Skip to content</a><HeaderScroll /><Header theme={theme} /><main id="main">{children}</main><footer className="site-footer"><Brand compact /><SocialLinks /><a href="#top">Back to top <Arrow /></a></footer><PageMotion /><SectionNavigation /></div>;
+export function Shell({ theme, children, showcase }: { theme: Theme; active?: number; showcase?: boolean; children: ReactNode }) {
+  return <div className={`site theme-${theme}`} id="top"><a className="skip-link" href="#main">Skip to content</a><HeaderScroll /><Header theme={theme} showcase={showcase} /><main id="main">{children}</main><footer className="site-footer"><Brand compact />{showcase ? <div className="showcase-footer-contact"><p>Follow MIBC</p><SocialLinks /><a href="mailto:info@nsumibc.online">info@nsumibc.online</a></div> : <SocialLinks />}<a href="#top">Back to top <Arrow /></a></footer><PageMotion /><SectionNavigation /></div>;
 }
 
 export function FAQ({ title = 'A little clarity, before you leap.' }: { title?: string }) {
