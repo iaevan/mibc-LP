@@ -22,7 +22,7 @@ export const structuredData = {
   '@context': 'https://schema.org',
   '@graph': [
     organization,
-    { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: SITE_NAME, alternateName: 'NSU MIBC', url: `${SITE_URL}/`, inLanguage: 'en', publisher: { '@id': organization['@id'] } },
+    { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: SITE_NAME, alternateName: 'MIBC', url: `${SITE_URL}/`, inLanguage: 'en', publisher: { '@id': organization['@id'] } },
     { '@type': 'WebPage', '@id': `${SITE_URL}/#webpage`, url: `${SITE_URL}/`, name: `${SITE_NAME} | North South University`, isPartOf: { '@id': `${SITE_URL}/#website` }, about: { '@id': organization['@id'] }, inLanguage: 'en' },
   ],
 };

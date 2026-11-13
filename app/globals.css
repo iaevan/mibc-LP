@@ -1058,7 +1058,7 @@
   .club-motto h2 { font-size: clamp(3rem,7vw,6.5rem); line-height: 1.03; }
   .club-motto h2 em { padding-left: 0; }
   .club-motto>.motto-identity { display: flex; flex-direction: column; gap: .65rem; margin: 2.25rem auto 0; padding-top: 1.5rem; border-top: 1px solid #3b0f1d40; width: fit-content; max-width: 100%; }
-  .motto-identity p { font-size: clamp(.95rem,1.5vw,1.2rem); line-height: 1.5; font-weight: 550; }
+  .motto-identity p { max-width: 48ch; margin: 0; font-size: clamp(.95rem,1.5vw,1.2rem); line-height: 1.5; font-weight: 550; }
   .club-motto>.motto-identity>.motto-university { max-width: none; font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; line-height: 1.5; }
   .motto-name-break { display: none; }
   @media(max-width:760px) {

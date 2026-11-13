@@ -19,7 +19,14 @@ export default function SignalPage() {
     </section>
     <ClubProgram showcase />
     <EventLogos />
-    <section className="signal-manifesto club-motto section-pad" aria-labelledby="motto-title"><span className="motto-emblem" aria-hidden="true"><Asterisk /></span><h2 id="motto-title" data-reveal>Marketing &amp;<br /><em>International Business Club</em></h2><div className="motto-identity"><span className="motto-university">North South University</span></div></section>
+    <section className="signal-manifesto club-motto section-pad" aria-labelledby="motto-title">
+      <span className="motto-emblem" aria-hidden="true"><Asterisk /></span>
+      <h2 id="motto-title" data-reveal>Marketing &amp;<br /><em>International Business Club</em></h2>
+      <div className="motto-identity">
+        <span className="motto-university">North South University</span>
+        <p>NSU MIBC brings students together to explore marketing and international business through competitions, workshops, and conversations with industry professionals.</p>
+      </div>
+    </section>
 
   </Shell>;
 }
