@@ -23,7 +23,7 @@ export function Header({ theme, showcase }: { theme: Theme; showcase?: boolean }
 }
 
 export function Shell({ theme, children, showcase }: { theme: Theme; active?: number; showcase?: boolean; children: ReactNode }) {
-  return <div className={`site theme-${theme}`} id="top"><a className="skip-link" href="#main">Skip to content</a><HeaderScroll /><Header theme={theme} showcase={showcase} /><main id="main">{children}</main><footer className="site-footer"><Brand compact />{showcase ? <div className="showcase-footer-contact"><p>Follow MIBC</p><SocialLinks /><a href="mailto:info@nsumibc.online">info@nsumibc.online</a></div> : <SocialLinks />}<a href="#top">Back to top <Arrow /></a></footer><PageMotion /><SectionNavigation /></div>;
+  return <div className={`site theme-${theme}`} id="top"><a className="skip-link" href="#main">Skip to content</a><HeaderScroll /><Header theme={theme} showcase={showcase} /><main id="main">{children}</main><footer className="site-footer"><Brand compact />{showcase ? <div className="showcase-footer-contact"><p>Follow MIBC</p><SocialLinks email="info@nsumibc.online" /></div> : <SocialLinks />}<a href="#top">Back to top <Arrow /></a></footer><PageMotion /><SectionNavigation /></div>;
 }
 
 export function FAQ({ title = 'A little clarity, before you leap.' }: { title?: string }) {

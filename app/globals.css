@@ -1244,13 +1244,6 @@
   }
   .showcase-footer-contact p { margin: 0; }
   .showcase-footer-contact .footer-socials { width: auto; padding: 0; }
-  .showcase-footer-contact > a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    text-decoration: underline;
-    text-underline-offset: .25em;
-  }
   @media (max-width: 760px) {
     .showcase-footer-contact { grid-column: 1 / -1; grid-row: 2; }
   }
