@@ -123,6 +123,10 @@ npm run tickets -- upload-template --remote                        # store the b
 
 Run `render` and `upload` again after adding people. Sending will not start while anyone in the queue has no uploaded ticket.
 
+## Independent email campaign dashboard
+
+The club email workspace is available at `/admin/`. Its accounts, database, sender queue and deployment are independent from the ticket desk. See [the organizer and developer guide](docs/email-campaigns.md) for importing teams, composing personalized messages, testing, pausing, retries and deployment credentials. Run `npm run test:campaigns` for integration checks without sending email.
+
 ## Change the recruitment details
 
 - `lib/content.ts` holds the **FORM_URL**, FAQs, discipline copy, and layout links. Change FORM_URL once to update all application links.

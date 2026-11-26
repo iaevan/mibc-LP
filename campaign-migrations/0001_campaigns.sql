@@ -1,0 +1,12 @@
+CREATE TABLE admins (username TEXT PRIMARY KEY, password_hash TEXT NOT NULL);
+CREATE TABLE admin_sessions (id TEXT PRIMARY KEY, username TEXT NOT NULL, expires_at INTEGER NOT NULL);
+CREATE TABLE admin_failures (key TEXT, at INTEGER);
+CREATE INDEX failures_time ON admin_failures(key,at);
+CREATE TABLE campaigns (id TEXT PRIMARY KEY, name TEXT NOT NULL, subject TEXT NOT NULL DEFAULT '', html TEXT NOT NULL DEFAULT '', state TEXT NOT NULL DEFAULT 'draft', version INTEGER NOT NULL DEFAULT 1, import_id TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, tested_version INTEGER, last_error TEXT);
+CREATE TABLE recipients (id TEXT PRIMARY KEY, campaign_id TEXT NOT NULL, import_id TEXT NOT NULL, team TEXT NOT NULL, name TEXT NOT NULL, email TEXT NOT NULL, members TEXT NOT NULL, issue TEXT NOT NULL DEFAULT '', enabled INTEGER NOT NULL DEFAULT 1, status TEXT NOT NULL DEFAULT 'queued', claim TEXT UNIQUE, claimed_at INTEGER, attempts INTEGER NOT NULL DEFAULT 0, error TEXT, sent_at INTEGER, message_id TEXT, is_test INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX recipient_queue ON recipients(campaign_id,import_id,status,is_test);
+CREATE TABLE attempts (id TEXT PRIMARY KEY, recipient_id TEXT NOT NULL, started_at INTEGER NOT NULL, finished_at INTEGER, status TEXT NOT NULL DEFAULT 'sending', message_id TEXT, error TEXT);
+CREATE INDEX attempt_quota ON attempts(started_at);
+CREATE TABLE audit (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, action TEXT NOT NULL, campaign_id TEXT, at INTEGER NOT NULL);
+CREATE TABLE sender (id INTEGER PRIMARY KEY CHECK(id=1), next_at INTEGER NOT NULL DEFAULT 0, heartbeat INTEGER);
+INSERT INTO sender(id) VALUES(1);

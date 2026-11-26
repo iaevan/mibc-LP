@@ -7,7 +7,7 @@ const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN || 'phc_DbtF2v2rM5f4
 const host = `${window.location.origin}/mibc-pulse`;
 
 // The organizer ticket desk shows attendee details, so it never loads analytics.
-const ticketDesk = window.location.pathname.startsWith('/ticketmanagement');
+const ticketDesk = ['/ticketmanagement', '/admin'].some(path => window.location.pathname.startsWith(path));
 
 if (['nsumibc.online', 'www.nsumibc.online'].includes(window.location.hostname) && !ticketDesk) {
   posthog.init(token, {

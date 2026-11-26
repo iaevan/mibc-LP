@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mibc-campaigns",
+  "main": "worker/campaigns/entry.mjs",
+  "account_id": "c56a37fca8b10eaf67f25e3c60bd0e7b",
+  "compatibility_date": "2026-10-29",
+  "workers_dev": true,
+  "d1_databases": [{
+    "binding": "CAMPAIGN_DB",
+    "database_name": "mibc-campaigns",
+    "database_id": "f8bf7cb9-242f-432a-9fab-fa1aacd3d804",
+    "migrations_dir": "campaign-migrations"
+  }],
+  "vars": {
+    "PUBLIC_ORIGIN": "https://nsumibc.online",
+    "CAMPAIGN_PROVIDER": "hostinger",
+    "CAMPAIGN_DAILY_LIMIT": "900",
+    "CAMPAIGN_PER_MINUTE": "1"
+  }
+}

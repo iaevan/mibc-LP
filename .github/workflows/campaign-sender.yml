@@ -1,0 +1,38 @@
+name: Campaign sender
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '3-59/10 * * * *'
+
+concurrency:
+  group: campaign-sender
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/campaign-sender
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+        working-directory: scripts/campaign-sender
+      - run: node send.mjs
+        working-directory: scripts/campaign-sender
+        env:
+          CAMPAIGN_API: https://nsumibc.online
+          CAMPAIGN_RUNNER_TOKEN: ${{ secrets.CAMPAIGN_RUNNER_TOKEN }}
+          SMTP_HOST: smtp.hostinger.com
+          SMTP_PORT: '465'
+          SMTP_USER: info@nsumibc.online
+          SMTP_PASSWORD: ${{ secrets.CAMPAIGN_SMTP_PASSWORD || secrets.SMTP_PASSWORD }}
+          BREVO_API_KEY: ${{ secrets.CAMPAIGN_BREVO_API_KEY }}
+          MAX_MINUTES: '330'
