@@ -2,8 +2,24 @@
 
 import { useEffect, useState } from 'react';
 import { ApiError, caseFileUrl, formatBytes, publicCase, type PublicCase } from './api';
-import { PdfViewer } from './pdf-viewer';
+import { PdfViewer, prefetchPdf, warmPdfjs } from './pdf-viewer';
 import styles from './cases.module.css';
+
+type InlineCase = { case?: PublicCase; error?: string };
+let inlineCache: InlineCase | null | undefined;
+function readInlineCase(): InlineCase | null {
+  if (inlineCache !== undefined) return inlineCache;
+  try { inlineCache = JSON.parse(document.getElementById('case-data')?.textContent || 'null'); } catch { inlineCache = null; }
+  return inlineCache ?? null;
+}
+
+// Runs as soon as this code loads, before React draws anything, so the PDF and
+// the pdf.js code are already on their way.
+if (typeof window !== 'undefined' && window.location.pathname.startsWith('/case/')) {
+  const inline = readInlineCase();
+  if (inline?.case) prefetchPdf(caseFileUrl(inline.case));
+  void warmPdfjs().catch(() => undefined);
+}
 
 function slugFromPath() {
   const match = window.location.pathname.match(/^\/case\/([^/]+)/);
@@ -15,12 +31,29 @@ export function CaseViewer() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const show = (found: PublicCase) => setItem(found);
+    // The server puts the case details in the page, so no extra request is needed.
+    const inline = readInlineCase();
+    if (inline?.case) { show(inline.case); return; }
+    if (inline?.error) { setError(inline.error); return; }
     const slug = slugFromPath();
     if (!slug) { setError('Open the case link the organizers shared with you.'); return; }
     publicCase(slug)
-      .then(found => { setItem(found); document.title = `${found.title} | NSU MIBC`; })
+      .then(found => { prefetchPdf(caseFileUrl(found)); show(found); })
       .catch(problem => setError(problem instanceof ApiError ? problem.message : 'The case could not be loaded.'));
   }, []);
+
+  // The server already wrote the case title into the page, but Next.js puts the
+  // static "Case" title back after it starts, so keep the case title in place.
+  useEffect(() => {
+    if (!item) return;
+    const wanted = `${item.title} | NSU MIBC`;
+    const keep = () => { if (document.title !== wanted) document.title = wanted; };
+    keep();
+    const observer = new MutationObserver(keep);
+    observer.observe(document.head, { subtree: true, childList: true, characterData: true });
+    return () => observer.disconnect();
+  }, [item]);
 
   if (error) {
     return (

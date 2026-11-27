@@ -12,3 +12,5 @@
 /og/*
   Cache-Control: public, max-age=604800
   Content-Disposition: inline
+/pdfjs/*
+  Cache-Control: public, max-age=31536000, immutable

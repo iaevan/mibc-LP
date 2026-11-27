@@ -180,28 +180,102 @@ async function publicRoute(request, env, ctx) {
   if (!row) throw new CaseError(404, 'This case is not available. Check the link with the organizers.');
 
   if (!match[2]) {
-    ctx.waitUntil(env.DB.prepare('UPDATE cases SET views = views + 1 WHERE id = ?').bind(row.id).run());
-    const item = toCase(row);
-    return json({ case: { slug: item.slug, title: item.title, description: item.description, fileName: item.fileName, size: item.size, allowDownload: item.allowDownload, updatedAt: item.updatedAt } });
+    ctx.waitUntil(countView(env, row.id));
+    return json({ case: publicFields(row) });
   }
 
   const download = url.searchParams.has('download');
   if (download && !row.allow_download) throw new CaseError(403, 'Downloads are turned off for this case');
-  const file = await env.TICKET_IMAGES.get(fileKey(slug), { type: 'stream', cacheTtl: 60 });
-  if (!file) throw new CaseError(404, 'The case file is missing. Tell the organizers.');
+  const body = request.method === 'HEAD' ? null : await caseBytes(env, ctx, url, row);
   if (download) ctx.waitUntil(env.DB.prepare('UPDATE cases SET downloads = downloads + 1 WHERE id = ?').bind(row.id).run());
   const name = row.file_name.replace(/"/g, '');
-  return new Response(request.method === 'HEAD' ? null : file, {
+  // The viewer asks for ?v=<updated time>. That exact version never changes, so
+  // browsers keep it; a replaced PDF gets a new version and a new URL.
+  const current = url.searchParams.get('v') === String(row.updated_at);
+  return new Response(body, {
     headers: {
       'content-type': 'application/pdf',
       'content-length': String(row.size),
       'content-disposition': `${download ? 'attachment' : 'inline'}; filename="${name}"`,
-      // The viewer adds ?v=<updated time>, so a replaced PDF gets a fresh URL.
-      'cache-control': 'private, max-age=600',
+      'cache-control': current && !download ? 'private, max-age=31536000, immutable' : 'private, no-cache',
       'x-robots-tag': 'noindex, nofollow',
       'x-content-type-options': 'nosniff',
     },
   });
+}
+
+function publicFields(row) {
+  const item = toCase(row);
+  return { slug: item.slug, title: item.title, description: item.description, fileName: item.fileName, size: item.size, allowDownload: item.allowDownload, updatedAt: item.updatedAt };
+}
+
+function countView(env, id) {
+  return env.DB.prepare('UPDATE cases SET views = views + 1 WHERE id = ?').bind(id).run();
+}
+
+// PDF bytes come from Cloudflare's edge cache when this data center has served
+// them before, which is much faster than reading KV. The cache key includes the
+// version, so replacing a PDF never serves the old file. Visibility is still
+// checked in D1 before every response.
+async function caseBytes(env, ctx, url, row) {
+  const cache = typeof caches === 'undefined' ? null : caches.default;
+  const key = new Request(`${url.origin}/__case-file-cache/${row.slug}/${row.updated_at}`);
+  const hit = cache ? await cache.match(key).catch(() => null) : null;
+  if (hit) return hit.body;
+  const bytes = await env.TICKET_IMAGES.get(fileKey(row.slug), { type: 'arrayBuffer', cacheTtl: 300 });
+  if (!bytes) throw new CaseError(404, 'The case file is missing. Tell the organizers.');
+  if (cache) {
+    ctx.waitUntil(cache.put(key, new Response(bytes, {
+      headers: { 'content-type': 'application/pdf', 'cache-control': 'public, max-age=2592000' },
+    })).catch(() => undefined));
+  }
+  return bytes;
+}
+
+function escapeAttribute(value) {
+  return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+// Puts the case details into the page and asks the browser to fetch the PDF and
+// the PDF.js code straight away, in parallel, instead of one after another.
+async function caseHead(request, env, ctx) {
+  const slug = new URL(request.url).pathname.match(/^\/case\/([^/]+)/)?.[1]?.toLowerCase();
+  if (!slug || !SLUG_PATTERN.test(slug) || !env.DB) return { data: { error: 'This case link is not valid' }, tags: '' };
+  try {
+    await ensureSchema(env);
+    const row = await env.DB.prepare(`SELECT ${COLUMNS} FROM cases WHERE slug = ? AND published = 1`).bind(slug).first();
+    if (!row) return { data: { error: 'This case is not available. Check the link with the organizers.' }, tags: '' };
+    ctx.waitUntil(countView(env, row.id));
+    const file = `/api/cases/${row.slug}/file?v=${row.updated_at}`;
+    return {
+      data: { case: publicFields(row) },
+      tags: `<link rel="preload" href="${escapeAttribute(file)}" as="fetch" crossorigin="anonymous" fetchpriority="high">`
+        // Keep this path in step with PDFJS_BASE in components/cases/pdf-viewer.tsx.
+        + '<link rel="modulepreload" href="/pdfjs/6.5.438/pdf.min.mjs">',
+    };
+  } catch (error) {
+    console.error('Case page lookup failed', error);
+    return null; // The page falls back to asking the API.
+  }
+}
+
+export async function serveCasePage(request, env, pathname, ctx) {
+  const target = new URL(pathname, request.url);
+  const response = await env.ASSETS.fetch(new Request(target, { method: 'GET', headers: request.headers }));
+  const headers = new Headers(response.headers);
+  headers.set('x-robots-tag', 'noindex, nofollow');
+  headers.set('referrer-policy', 'no-referrer');
+  headers.set('cache-control', 'no-cache');
+  headers.delete('etag');
+  headers.delete('content-length');
+  const head = pathname === '/case/' && response.ok && ctx ? await caseHead(request, env, ctx) : null;
+  if (!head) return new Response(response.body, { status: response.status, headers });
+  const json = JSON.stringify(head.data).replace(/</g, '\\u003c');
+  const title = head.data.case ? `${head.data.case.title} | NSU MIBC` : null;
+  return new HTMLRewriter()
+    .on('head', { element(element) { element.prepend(`${head.tags}<script id="case-data" type="application/json">${json}</script>`, { html: true }); } })
+    .on('title', { element(element) { if (title) element.setInnerContent(title); } })
+    .transform(new Response(response.body, { status: response.status, headers }));
 }
 
 export async function handlePublicCaseApi(request, env, ctx) {
@@ -213,15 +287,4 @@ export async function handlePublicCaseApi(request, env, ctx) {
     console.error('Case API error', error);
     return json({ error: 'Something went wrong. Try again.' }, 500);
   }
-}
-
-// /case/<slug>/ is one static page that reads the slug from the address.
-export async function serveCasePage(request, env, pathname) {
-  const target = new URL(pathname, request.url);
-  const response = await env.ASSETS.fetch(new Request(target, { method: 'GET', headers: request.headers }));
-  const headers = new Headers(response.headers);
-  headers.set('x-robots-tag', 'noindex, nofollow');
-  headers.set('referrer-policy', 'no-referrer');
-  headers.set('cache-control', 'no-cache');
-  return new Response(response.body, { status: response.status, headers });
 }

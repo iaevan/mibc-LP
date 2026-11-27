@@ -77,7 +77,7 @@ Organizers sign in at `https://nsumibc.online/casemanagement/` with their ticket
 - `worker/cases.mjs` serves the organizer API under `/api/tm/cases` (same session as the ticket desk) and the public API under `/api/cases/<code>`.
 - Case details live in the `cases` table of the `mibc-tickets` D1 database (`migrations/0004_cases.sql`; the Worker also creates the table on first use). PDF bytes are stored in the `TICKET_IMAGES` KV namespace under `case-file:<code>`.
 - Links use random 12 character codes, so cases cannot be found by guessing. View only hides the download buttons and blocks the download URL, but participants can still screenshot pages.
-- The viewer uses PDF.js, copied into `public/pdfjs/` from the `pdfjs-dist` package (version in `public/pdfjs/VERSION.txt`).
+- The viewer uses PDF.js, copied into `public/pdfjs/<version>/` from the `pdfjs-dist` package. Files there are cached for a year, so an upgrade goes in a new version folder; update `PDFJS_BASE` in `components/cases/pdf-viewer.tsx` and the preload link in `worker/cases.mjs`.
 
 ## Ticket desk (event check-in)
 

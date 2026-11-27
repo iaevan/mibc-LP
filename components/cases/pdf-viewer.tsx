@@ -8,14 +8,53 @@ import styles from './cases.module.css';
 type PdfDoc = { numPages: number; getPage(n: number): Promise<any>; destroy(): Promise<void> };
 type PageSize = { width: number; height: number };
 
-const PDFJS_SRC = '/pdfjs/pdf.min.mjs';
-let pdfjsPromise: Promise<any> | null = null;
-function loadPdfjs() {
+// Files in this folder are cached for a year. Upgrade pdf.js into a new version
+// folder and update this path and the preload link in worker/cases.mjs.
+const PDFJS_BASE = '/pdfjs/6.5.438/';
+const PDFJS_SRC = `${PDFJS_BASE}pdf.min.mjs`;
+let pdfjsPromise: Promise<{ lib: any; worker: any }> | null = null;
+
+// Loads pdf.js and starts its worker thread. Call it as early as possible so this
+// happens while the PDF is still downloading.
+export function warmPdfjs() {
   pdfjsPromise ??= import(/* webpackIgnore: true */ /* turbopackIgnore: true */ PDFJS_SRC).then(lib => {
-    lib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
-    return lib;
+    lib.GlobalWorkerOptions.workerSrc = `${PDFJS_BASE}pdf.worker.min.mjs`;
+    return { lib, worker: new lib.PDFWorker({ name: 'case-viewer' }) };
   }).catch(error => { pdfjsPromise = null; throw error; });
   return pdfjsPromise;
+}
+
+type Download = { promise: Promise<ArrayBuffer>; listeners: Set<(fraction: number) => void>; fraction: number };
+const downloads = new Map<string, Download>();
+
+// Fetches the whole PDF once. The page's <link rel="preload"> has usually started
+// this request already, and fetch() picks up that response instead of a new one.
+export function prefetchPdf(url: string): Download {
+  const existing = downloads.get(url);
+  if (existing) return existing;
+  const entry: Download = { promise: Promise.resolve(new ArrayBuffer(0)), listeners: new Set(), fraction: 0 };
+  entry.promise = (async () => {
+    const response = await fetch(url, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error(response.status === 404 ? 'Missing PDF' : `Download failed (${response.status})`);
+    const total = Number(response.headers.get('content-length')) || 0;
+    if (!response.body || !total) return response.arrayBuffer();
+    const reader = response.body.getReader();
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (offset + value.length > bytes.length) return new Blob([bytes.subarray(0, offset), value]).arrayBuffer(); // Size was wrong; stop counting.
+      bytes.set(value, offset);
+      offset += value.length;
+      entry.fraction = offset / total;
+      entry.listeners.forEach(listener => listener(entry.fraction));
+    }
+    return bytes.buffer.slice(0, offset);
+  })();
+  entry.promise.catch(() => downloads.delete(url));
+  downloads.set(url, entry);
+  return entry;
 }
 
 const ZOOM_STEPS = [0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
@@ -40,30 +79,50 @@ export function PdfViewer({ url, title, toolbarEnd, intro }: { url: string; titl
     let cancelled = false;
     let loaded: PdfDoc | null = null;
     setDoc(null); setSizes([]); setError(''); setProgress(0);
+    const download = prefetchPdf(url);
+    const onProgress = (fraction: number) => setProgress(fraction);
+    download.listeners.add(onProgress);
+    setProgress(download.fraction);
     (async () => {
       try {
-        const lib = await loadPdfjs();
+        // The PDF, pdf.js and its worker all load at the same time.
+        const [{ lib, worker }, data] = await Promise.all([warmPdfjs(), download.promise]);
+        downloads.delete(url); // pdf.js takes over the bytes, so they cannot be reused.
+        if (cancelled) return;
         const task = lib.getDocument({
-          url,
-          disableRange: true,
-          standardFontDataUrl: '/pdfjs/standard_fonts/',
-          wasmUrl: '/pdfjs/wasm/',
+          data,
+          worker,
+          standardFontDataUrl: `${PDFJS_BASE}standard_fonts/`,
+          wasmUrl: `${PDFJS_BASE}wasm/`,
           isEvalSupported: false,
         });
-        task.onProgress = ({ loaded: done, total }: { loaded: number; total: number }) => { if (total) setProgress(done / total); };
         loaded = await task.promise as PdfDoc;
-        if (cancelled) { void loaded.destroy(); return; }
-        const pages = await Promise.all(Array.from({ length: loaded.numPages }, (_, index) => loaded!.getPage(index + 1)));
-        const found = pages.map(item => { const view = item.getViewport({ scale: 1 }); return { width: view.width, height: view.height }; });
         if (cancelled) return;
-        setSizes(found);
+        // Show the document as soon as page 1 is known. Other pages take page 1's
+        // size until their own is read, which happens in the background.
+        const first = (await loaded.getPage(1)).getViewport({ scale: 1 });
+        if (cancelled) return;
+        const guess = { width: first.width, height: first.height };
+        setSizes(Array.from({ length: loaded.numPages }, () => guess));
         setDoc(loaded);
+        const found: PageSize[] = [guess];
+        for (let number = 2; number <= loaded.numPages; number += 1) {
+          const view = (await loaded.getPage(number)).getViewport({ scale: 1 });
+          if (cancelled) return;
+          found.push({ width: view.width, height: view.height });
+        }
+        if (found.some(size => size.width !== guess.width || size.height !== guess.height)) setSizes(found);
       } catch (problem) {
         if (!cancelled) setError(problem instanceof Error && /Missing PDF|Unexpected server response \(404\)/.test(problem.message)
           ? 'This case file could not be found.' : 'The case could not be opened here. Try the download button, or refresh the page.');
       }
     })();
-    return () => { cancelled = true; if (loaded) void loaded.destroy(); };
+    return () => {
+      cancelled = true;
+      download.listeners.delete(onProgress);
+      // Destroying the document would also stop the shared worker, so only release its pages.
+      if (loaded) void (loaded as any).cleanup?.();
+    };
   }, [url]);
 
   useEffect(() => {
@@ -218,6 +277,7 @@ function PdfPage({ doc, number, size, scale }: { doc: PdfDoc; number: number; si
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [near, setNear] = useState(false);
   const [rendered, setRendered] = useState(false);
+  const drawnOnce = useRef(false);
   const cssWidth = Math.floor(size.width * scale);
   const cssHeight = Math.floor(size.height * scale);
 
@@ -237,7 +297,7 @@ function PdfPage({ doc, number, size, scale }: { doc: PdfDoc; number: number; si
     if (!near) { setRendered(false); return; }
     let task: { promise: Promise<void>; cancel(): void } | null = null;
     let cancelled = false;
-    // Wait a moment so quick zoom clicks render once, at the final size.
+    // The first draw starts at once. After that, wait a moment so quick zoom clicks render once, at the final size.
     const timer = setTimeout(async () => {
       try {
         const pdfPage = await doc.getPage(number);
@@ -259,8 +319,9 @@ function PdfPage({ doc, number, size, scale }: { doc: PdfDoc; number: number; si
         canvas.height = offscreen.height;
         canvas.getContext('2d')?.drawImage(offscreen, 0, 0);
         setRendered(true);
+        drawnOnce.current = true;
       } catch { /* A cancelled render throws; the next effect run draws again. */ }
-    }, 60);
+    }, drawnOnce.current ? 60 : 0);
     return () => { cancelled = true; clearTimeout(timer); task?.cancel(); };
   }, [doc, near, number, scale]);
 

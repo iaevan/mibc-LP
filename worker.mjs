@@ -12,7 +12,7 @@ export default {
     if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return serveAdmin(request, env);
     if (url.pathname.startsWith(API_PREFIX)) return handleTicketApi(request, env, ctx);
     if (url.pathname.startsWith(PUBLIC_CASE_API)) return handlePublicCaseApi(request, env, ctx);
-    if (url.pathname === '/case' || url.pathname.startsWith('/case/')) return serveCasePage(request, env, '/case/');
+    if (url.pathname === '/case' || url.pathname.startsWith('/case/')) return serveCasePage(request, env, '/case/', ctx);
     if (url.pathname === '/casemanagement' || url.pathname.startsWith('/casemanagement/')) return serveCasePage(request, env, '/casemanagement/');
     if (url.pathname === '/ticketmanagement' || url.pathname.startsWith('/ticketmanagement/')) return serveTicketPage(request, env);
     if (!url.pathname.startsWith(`${PREFIX}/`)) return env.ASSETS.fetch(request);
