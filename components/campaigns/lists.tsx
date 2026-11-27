@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./campaigns.module.css";
 import {
   api,
@@ -173,17 +173,27 @@ export function ListView({ id, me, back }: { id: string; me: Me; back: () => voi
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [panel, setPanel] = useState<"" | "rounds" | "sheet" | "settings">("");
 
-  const load = useCallback(async () => {
-    setList(await api<TeamList>(`lists/${id}`));
-  }, [id]);
+  const seen = useRef(0);
+  const load = useCallback(
+    async (background = false) => {
+      // Background refreshes ask only whether anything changed since last time.
+      const data = await api<TeamList | { unchanged: true; updated_at: number }>(
+        `lists/${id}${background && seen.current ? `?since=${seen.current}` : ""}`,
+      );
+      if ("unchanged" in data) return;
+      seen.current = data.updated_at;
+      setList(data);
+    },
+    [id],
+  );
   useEffect(() => {
-    void task.run(load);
+    void task.run(() => load());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
   // Pick up other people's changes while nobody here is editing a team.
   useEffect(() => {
     const timer = setInterval(() => {
-      if (!openTeam && !panel && !document.hidden) void load().catch(() => undefined);
+      if (!openTeam && !panel && !document.hidden) void load(true).catch(() => undefined);
     }, 20000);
     return () => clearInterval(timer);
   }, [load, openTeam, panel]);

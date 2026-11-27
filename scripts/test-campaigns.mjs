@@ -306,12 +306,15 @@ assert.equal(page.total, 2);
 assert.equal((await call(`emails/${email.id}/recipients?q=overthinkers`)).result.total, 1);
 // Resends need confirmation and count against the daily allowance.
 await call(`emails/${email.id}/retry`, { status: "sent" }, 400);
-await call(`emails/${email.id}/retry`, { status: "sent", confirm: true });
+const oneSent = (await call(`emails/${email.id}/recipients?status=sent`)).result.items[0];
+await call(`emails/${email.id}/retry`, { status: "sent", confirm: true, recipientId: oneSent.id });
+assert.equal((await call(`emails/${email.id}/stats`)).result.counts.queued, 1, "Only that team is queued again");
 await call(`emails/${email.id}/start`, {});
 resetRate();
 env.CAMPAIGN_DAILY_LIMIT = "3";
 assert.ok((await runner("claim", { claim: crypto.randomUUID() })).result.stop);
-stats = (await call(`emails/${email.id}/stats`)).result;
+assert.equal((await call(`emails/${email.id}/stats`)).result.settings.used, null, "Live polls skip the costly count");
+stats = (await call(`emails/${email.id}/stats?full=1`)).result;
 assert.ok(stats.settings.resumeAt > Date.now(), "Dashboard can say when sending resumes");
 env.CAMPAIGN_DAILY_LIMIT = "900";
 // Sent emails cannot be deleted mid-send, but stopped ones go to Trash and back.
@@ -392,6 +395,103 @@ try {
 } finally {
   globalThis.fetch = realFetch;
 }
+// ---- Hardening checks ----
+await login("test@nsumibc.online");
+// Hot sender and dashboard queries use indexes instead of scanning every recipient.
+const plan = (sql) =>
+  sqlite
+    .prepare(`EXPLAIN QUERY PLAN ${sql}`)
+    .all()
+    .map((row) => row.detail)
+    .join(" | ");
+for (const sql of [
+  "SELECT 1 FROM recipients WHERE status='sending' LIMIT 1",
+  "UPDATE recipients SET status='uncertain' WHERE status='sending' AND claimed_at<1",
+  "UPDATE attempts SET status='uncertain' WHERE status='sending' AND started_at<1",
+  "SELECT status, COUNT(*) FROM recipients WHERE campaign_id='x' AND import_id='y' AND is_test=0 GROUP BY status",
+  "DELETE FROM recipients WHERE campaign_id='x' AND is_test=0 AND import_id IS NOT 'y' AND NOT EXISTS(SELECT 1 FROM attempts a WHERE a.recipient_id=recipients.id)",
+]) {
+  const detail = plan(sql);
+  assert.doesNotMatch(detail, /SCAN (recipients|attempts)(?! USING (COVERING )?INDEX)/, `${sql} -> ${detail}`);
+  assert.doesNotMatch(detail, /SCAN a\b(?! USING)/, `${sql} -> ${detail}`);
+}
+// Emails carry a complete HTML document and a plain-text copy.
+let hard = (await call("emails", { name: "Hardening", list_id: listId })).result;
+hard = (
+  await call(`emails/${hard.id}/save`, {
+    version: hard.version,
+    subject: "Hi {{team_name}}",
+    html: '<p>Dear <strong>{{leader_name}}</strong> &amp; team,</p><ul><li>One</li><li>Two</li></ul><p><a href="https://nsumibc.online/x">Schedule</a></p>',
+    case_link: "https://nsumibc.online/case/c1/",
+  })
+).result;
+const hardTeams = (await call(`emails/${hard.id}/audience`)).result.teams;
+// A second test replaces a waiting one instead of being refused.
+await call(`emails/${hard.id}/test`, { email: "one@example.com", teamId: hardTeams[0].id });
+hard = (await call(`emails/${hard.id}/test`, { email: "two@example.com", teamId: hardTeams[0].id })).result;
+assert.deepEqual(hard.tests.map((t) => `${t.email}:${t.status}`).slice(0, 2), ["two@example.com:queued", "one@example.com:cancelled"]);
+// Editing after queuing a test cancels it, because it would show the old wording.
+hard = (await call(`emails/${hard.id}/save`, { version: hard.version, subject: "Hello {{team_name}}" })).result;
+assert.equal(hard.tests[0].status, "cancelled");
+assert.match(hard.tests[0].error, /Replaced by later edits/);
+hard = (await call(`emails/${hard.id}/test`, { email: "three@example.com", teamId: hardTeams[0].id })).result;
+resetRate();
+const docClaim = crypto.randomUUID();
+job = (await runner("claim", { claim: docClaim })).result;
+assert.match(job.html, /^<!doctype html>/);
+assert.match(job.html, /max-width:640px/);
+assert.match(job.text, /^Dear .+ & team,/);
+assert.match(job.text, /- One\n- Two/);
+assert.match(job.text, /Schedule \(https:\/\/nsumibc.online\/x\)/);
+assert.match(job.text, /Open the case \(https:\/\/nsumibc.online\/case\/c1\/\)/);
+await runner("report", { claim: docClaim, ok: true, messageId: "doc" });
+// An empty queue tells a waiting sender to keep waiting, and frees the rate slot.
+resetRate();
+const idle = (await runner("claim", { claim: crypto.randomUUID() })).result;
+assert.equal(idle.idle, true);
+assert.ok(sqlite.prepare("SELECT next_at FROM sender").get().next_at <= Date.now());
+// Mass resend of everyone already sent is refused; one team at a time is allowed.
+await call(`emails/${email.id}/retry`, { status: "sent", confirm: true }, 400);
+
+// Background list refreshes are answered from the list row when nothing changed.
+list = (await call(`lists/${listId}`)).result;
+assert.equal((await call(`lists/${listId}?since=${list.updated_at}`)).result.unchanged, true);
+// Autosaves within two minutes are one log entry measured from the original.
+await login("lengra");
+let alpha = list.teams.find((t) => t.team === "Delta");
+alpha = (await call(`teams/${alpha.id}`, { ...alpha, team: "Delta One" })).result.team;
+alpha = (await call(`teams/${alpha.id}`, { ...alpha, team: "Delta Two" })).result.team;
+assert.ok((await call(`lists/${listId}?since=${list.updated_at}`)).result.teams, "A change shows up on refresh");
+await login("test@nsumibc.online");
+const deltaLog = (await call("activity")).result.items.filter((a) => a.action === "edit_team" && a.summary.includes("Delta"));
+assert.equal(deltaLog.length, 1);
+assert.match(deltaLog[0].summary, /team name "Delta" to "Delta Two"/);
+// Editing it back removes the entry, since nothing changed in the end.
+await login("lengra");
+await call(`teams/${alpha.id}`, { ...alpha, team: "Delta" });
+await login("test@nsumibc.online");
+assert.equal((await call("activity")).result.items.filter((a) => a.action === "edit_team" && a.summary.includes("Delta")).length, 0);
+
+// More Google Form heading styles, and a submitter name before the team name.
+const variants = parseTeamSheet(
+  [
+    "Timestamp,Your Name,Team Name,Team Leader Name,Leader Email,Leader Phone,Name (Member 2),Email (Member 2),Member 3 Name,Member 3 Email",
+    "t,Submitter,Gamma,Lead Person,LEAD@example.com,1811111111,Second,second@example.com,Third,third@example.com",
+  ].join("\n"),
+);
+assert.equal(variants[0].leader_name, "Lead Person", "The submitter is not the leader");
+assert.equal(variants[0].leader_email, "lead@example.com");
+assert.equal(variants[0].members[0].phone, "01811111111");
+assert.deepEqual(variants[0].members.map((m) => m.name), ["Lead Person", "Second", "Third"]);
+assert.equal(variants[0].members[2].email, "third@example.com");
+
+// Wrong passwords lock that account after 8 tries, not the whole network.
+cookie = "";
+for (let i = 0; i < 8; i++)
+  await call("login", { username: "madok", password: "wrong" }, 401, { "cf-connecting-ip": "198.51.100.7" });
+await call("login", { username: "madok", password }, 429, { "cf-connecting-ip": "198.51.100.7" });
+await call("login", { username: "lengra", password }, 200, { "cf-connecting-ip": "198.51.100.7" });
+
 sqlite.close();
 console.log(
   "Campaign integration checks passed: sheet parsing, roles, team edits and conflicts, rounds, activity log, audiences, optional tests, launch snapshots, stop and resume, retries, quota and isolation. No emails sent.",

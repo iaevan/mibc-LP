@@ -62,6 +62,24 @@ const escape = (text) =>
       ],
   );
 const PLACEHOLDER = /{{\s*(team_name|recipient_name|leader_name)\s*}}/g;
+const ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", nbsp: " " };
+// A plain-text copy next to the HTML improves spam scores and helps text-only readers.
+export function htmlToText(html) {
+  return String(html)
+    .replace(/<a\s[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href, label) => {
+      const text = label.replace(/<[^>]+>/g, "").trim();
+      return text && text !== href ? `${text} (${href})` : href;
+    })
+    .replace(/<li[^>]*>/gi, "\n- ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-3]|blockquote|tr|ul|ol)>/gi, "\n\n")
+    .replace(/<\/t[dh]>/gi, "\t")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, name) => ENTITIES[name])
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 export function render(campaign, person) {
   const value = (key) => (key === "team_name" ? person.team : person.name);
   const replace = (text, html) =>
@@ -71,11 +89,16 @@ export function render(campaign, person) {
   const caseBlock = campaign.case_link
     ? `<p><a href="${escape(campaign.case_link)}"><strong>Open the case</strong></a></p>`
     : "";
+  const body = safeHtml(replace(campaign.html, true) + caseBlock);
   return {
     subject: replace(campaign.subject, false),
-    html: safeHtml(replace(campaign.html, true) + caseBlock),
+    html: body,
+    text: htmlToText(body),
   };
 }
+// A complete document renders consistently across Gmail, Outlook and phones.
+const emailDocument = (body) =>
+  `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;padding:0;background:#ffffff"><div style="max-width:640px;margin:0 auto;padding:20px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222222">${body}</div></body></html>`;
 function validate(c) {
   if (
     !c.subject ||
@@ -96,7 +119,10 @@ async function campaign(db, id) {
   if (!c) fail(404, "Email not found");
   return c;
 }
-async function settings(db, env) {
+const WORKFLOW_URL =
+  "https://github.com/iaevan/mibc-LP/actions/workflows/campaign-sender.yml";
+// Sending limits from configuration only. No database reads.
+function config(env) {
   const provider = env.CAMPAIGN_PROVIDER || "hostinger";
   const configured = Number(
     env.CAMPAIGN_DAILY_LIMIT ?? (provider === "hostinger" ? 900 : 0),
@@ -112,23 +138,33 @@ async function settings(db, env) {
     provider === "hostinger"
       ? Math.max(1, Math.min(25, Number(env.CAMPAIGN_PER_MINUTE) || 20))
       : Math.max(1, Math.min(50, Number(env.CAMPAIGN_PER_MINUTE) || 1));
-  const since = Date.now() - 86400000;
-  const used = await db
-    .prepare("SELECT COUNT(*) AS n, MIN(started_at) AS oldest FROM attempts WHERE started_at>?")
-    .bind(since)
-    .first();
-  const sender = await db.prepare("SELECT * FROM sender WHERE id=1").first();
   return {
     provider,
     dailyLimit: cap,
     perMinute: rate,
+    ready: !!env.CAMPAIGN_RUNNER_TOKEN && cap > 0,
+    workflowUrl: WORKFLOW_URL,
+  };
+}
+// The 24-hour count reads one index entry per attempt, so live polling skips it.
+async function settings(db, env, withUsage = true) {
+  const sender = await db
+    .prepare("SELECT heartbeat FROM sender WHERE id=1")
+    .first();
+  const base = { ...config(env), heartbeat: sender?.heartbeat ?? null };
+  if (!withUsage) return { ...base, used: null, resumeAt: null };
+  const used = await db
+    .prepare(
+      "SELECT COUNT(*) AS n, MIN(started_at) AS oldest FROM attempts WHERE started_at>?",
+    )
+    .bind(Date.now() - 86400000)
+    .first();
+  return {
+    ...base,
     used: used.n,
     // When the allowance is used up, room frees as the oldest attempt ages out.
-    resumeAt: used.n >= cap && used.oldest ? used.oldest + 86400000 : null,
-    heartbeat: sender.heartbeat,
-    ready: !!env.CAMPAIGN_RUNNER_TOKEN && cap > 0,
-    workflowUrl:
-      "https://github.com/iaevan/mibc-LP/actions/workflows/campaign-sender.yml",
+    resumeAt:
+      used.n >= base.dailyLimit && used.oldest ? used.oldest + 86400000 : null,
   };
 }
 const parseExcluded = (c) => {
@@ -140,7 +176,7 @@ const parseExcluded = (c) => {
   }
 };
 // Who would receive this email right now, and who is skipped and why.
-async function audience(db, c) {
+async function audience(db, c, withMembers = false) {
   if (!c.list_id) return { list: null, teams: [] };
   const list = await getList(db, c.list_id);
   const excluded = new Set(parseExcluded(c));
@@ -154,19 +190,23 @@ async function audience(db, c) {
       round: t.round,
       issue: t.issue,
       excluded: excluded.has(t.id),
+      ...(withMembers ? { members: t.members } : {}),
     }));
   return { list, teams };
 }
+const STATUSES = ["queued", "sending", "sent", "failed", "uncertain"];
+// Reads only the covering index, so the 3-second dashboard refresh stays cheap.
 async function counts(db, c) {
   const { results } = await db
     .prepare(
-      "SELECT status, COUNT(*) AS n FROM recipients WHERE campaign_id=? AND import_id=? AND is_test=0 AND enabled=1 GROUP BY status",
+      "SELECT status, COUNT(*) AS n FROM recipients WHERE campaign_id=? AND import_id=? AND is_test=0 GROUP BY status",
     )
     .bind(c.id, c.import_id || "")
     .all();
   const out = { queued: 0, sending: 0, sent: 0, failed: 0, uncertain: 0 };
-  for (const row of results) out[row.status] = row.n;
-  out.total = results.reduce((sum, row) => sum + row.n, 0);
+  for (const row of results)
+    if (STATUSES.includes(row.status)) out[row.status] = row.n;
+  out.total = STATUSES.reduce((sum, status) => sum + out[status], 0);
   return out;
 }
 async function detail(db, c, env) {
@@ -256,7 +296,7 @@ async function campaigns(ctx) {
       last_error: c.last_error,
       counts: await counts(db, c),
       recent: recent.results,
-      settings: await settings(db, env),
+      settings: await settings(db, env, url.searchParams.get("full") === "1"),
       now: Date.now(),
     });
   }
@@ -414,6 +454,13 @@ async function campaigns(ctx) {
       .run();
     if (!result.meta.changes)
       fail(409, "Someone else changed this email. Reload to see their changes.");
+    // A waiting test was for the old wording, so it would never be sent. Cancel it.
+    await db
+      .prepare(
+        "UPDATE recipients SET status='cancelled',error='Replaced by later edits. Send a new test.' WHERE campaign_id=? AND is_test=1 AND status='queued'",
+      )
+      .bind(id)
+      .run();
     return json(await detail(db, await campaign(db, id), env));
   }
   if (action === "test") {
@@ -428,17 +475,18 @@ async function campaigns(ctx) {
       .bind(clean(b.teamId), c.list_id || "")
       .first();
     if (!team) fail(400, "Choose a team to preview");
+    // A waiting test is replaced by the new one. Only an email mid-send blocks.
     if (
       (
         await db
           .prepare(
-            "SELECT COUNT(*) n FROM recipients WHERE campaign_id=? AND is_test=1 AND status IN ('queued','sending')",
+            "SELECT COUNT(*) n FROM recipients WHERE campaign_id=? AND is_test=1 AND status='sending'",
           )
           .bind(id)
           .first()
       ).n
     )
-      fail(409, "A test is already waiting to be sent");
+      fail(409, "A test is being sent right now. Try again in a minute.");
     await db.batch([
       db
         .prepare(
@@ -482,7 +530,7 @@ async function campaigns(ctx) {
     validate(c);
     if (b.confirm !== true) fail(400, "Confirm the number of teams before sending");
     if (!c.list_id) fail(400, "Choose a team list first");
-    const { list, teams } = await audience(db, c);
+    const { list, teams } = await audience(db, c, true);
     if (list.archived_at) fail(409, "This team list is in Trash. Restore it first.");
     const chosen = teams.filter((t) => !t.excluded && !t.issue);
     if (!chosen.length) fail(400, "No teams would receive this email");
@@ -490,9 +538,6 @@ async function campaigns(ctx) {
       fail(409, `The team list changed. ${chosen.length} teams would receive it now. Review and confirm again.`);
     // Snapshot the recipients, so later team edits never change a sent email.
     const importId = crypto.randomUUID();
-    const full = new Map(
-      (await listTeams(db, c.list_id)).map((t) => [t.id, t]),
-    );
     const inserts = chosen.map((t) =>
       db
         .prepare(
@@ -505,7 +550,7 @@ async function campaigns(ctx) {
           t.team,
           t.leader_name,
           t.leader_email,
-          JSON.stringify(full.get(t.id)?.members || []),
+          JSON.stringify(t.members || []),
           t.id,
         ),
     );
@@ -552,6 +597,9 @@ async function campaigns(ctx) {
       fail(400, "Choose which emails to retry");
     if (b.status !== "failed" && !b.confirm)
       fail(400, "Confirm that the leader may receive another copy");
+    // Resending everyone who already got the email is never one click away.
+    if (b.status === "sent" && !clean(b.recipientId))
+      fail(400, "Resend one team at a time");
     await db.batch([
       db
         .prepare(
@@ -605,13 +653,15 @@ async function route(request, env) {
       username = clean(b.username).toLowerCase();
     const now = Date.now();
     const ip = request.headers.get("cf-connecting-ip") || "local";
+    // Per account 8 tries; per network 30, so one typo-prone helper on the
+    // shared campus Wi-Fi cannot lock everyone else out.
     const failures = await db
       .prepare(
-        "SELECT COUNT(*) n FROM admin_failures WHERE (key=? OR key=?) AND at>?",
+        "SELECT SUM(key=?) AS user, SUM(key=?) AS ip FROM admin_failures WHERE (key=? OR key=?) AND at>?",
       )
-      .bind(username, ip, now - 900000)
+      .bind(username, ip, username, ip, now - 900000)
       .first();
-    if (failures.n >= 8)
+    if ((failures?.user || 0) >= 8 || (failures?.ip || 0) >= 30)
       fail(429, "Too many attempts. Try again in 15 minutes.");
     const user = await db
       .prepare("SELECT * FROM admins WHERE username=?")
@@ -773,16 +823,12 @@ async function runner(request, env, action) {
       "UPDATE campaigns SET state='done' WHERE state='running' AND NOT EXISTS(SELECT 1 FROM recipients r WHERE r.campaign_id=campaigns.id AND r.import_id=campaigns.import_id AND r.enabled=1 AND r.is_test=0 AND r.status IN ('queued','sending'))",
     )
     .run();
-  const s = await settings(db, env);
+  const s = config(env);
   if (!s.ready) return json({ stop: true, reason: "Sender not configured" });
-  if (s.used >= s.dailyLimit)
-    return json({ stop: true, reason: "Rolling daily allowance reached" });
   if (
-    (
-      await db
-        .prepare("SELECT COUNT(*) n FROM recipients WHERE status='sending'")
-        .first()
-    ).n
+    await db
+      .prepare("SELECT 1 AS busy FROM recipients WHERE status='sending' LIMIT 1")
+      .first()
   )
     return json({ wait: 5 });
   const lock = await db
@@ -819,7 +865,19 @@ async function runner(request, env, action) {
       .bind(claim, now, claim),
   ]);
   const p = results[0].results[0];
-  if (!p) return json({ stop: true, reason: "No queued campaign" });
+  if (!p) {
+    // Nothing claimed: free the rate slot, then say whether the queue is empty
+    // or the 24-hour allowance is used up. Only this path counts attempts.
+    await db.prepare("UPDATE sender SET next_at=? WHERE id=1").bind(now).run();
+    const usage = await settings(db, env);
+    if (usage.used >= usage.dailyLimit)
+      return json({
+        stop: true,
+        reason: "Rolling daily allowance reached",
+        resumeAt: usage.resumeAt,
+      });
+    return json({ stop: true, idle: true, reason: "No queued campaign" });
+  }
   return json(await job(db, env, p));
 }
 async function job(db, env, p) {
@@ -829,7 +887,8 @@ async function job(db, env, p) {
     claim: p.claim,
     provider: env.CAMPAIGN_PROVIDER || "hostinger",
     to: { name: p.name, email: p.email },
-    html: rendered.html,
+    html: emailDocument(rendered.html),
+    text: rendered.text,
     subject: (p.is_test ? "[TEST] " : "") + rendered.subject,
   };
 }

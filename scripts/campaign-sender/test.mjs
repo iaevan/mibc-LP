@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { deliver } from "./send.mjs";
+import { deliver, run } from "./send.mjs";
 const job = {
   provider: "hostinger",
   claim: "synthetic",
@@ -49,4 +49,48 @@ test("Provider throttling is a definite failure and pauses the sender", async ()
 });
 test("Missing credentials cannot send email", async () => {
   assert.equal((await deliver(job, {})).ok, false);
+});
+test("The plain-text copy travels with the HTML", async () => {
+  let sent;
+  await deliver({ ...job, text: "Plain copy" }, env, {
+    sendMail: async (message) => {
+      sent = message;
+      return { accepted: [job.to.email], messageId: "x" };
+    },
+  });
+  assert.equal(sent.text, "Plain copy");
+});
+test("A manual run waits for work, then sends it; a scheduled run exits at once", async () => {
+  const realFetch = globalThis.fetch;
+  const calls = [];
+  let claims = 0;
+  globalThis.fetch = async (url, options) => {
+    const action = url.split("/").pop();
+    calls.push(action);
+    const body = JSON.parse(options.body);
+    if (action === "claim") {
+      claims++;
+      // Nothing queued at first, then one email appears, then nothing again.
+      if (claims === 2) return new Response(JSON.stringify({ ...job, claim: body.claim }));
+      return new Response(JSON.stringify({ stop: true, idle: true, reason: "No queued campaign" }));
+    }
+    return new Response(JSON.stringify({ ok: true }));
+  };
+  try {
+    const base = {
+      CAMPAIGN_RUNNER_TOKEN: "synthetic",
+      CAMPAIGN_API: "https://example.test",
+      IDLE_POLL_MS: "1",
+      MAX_MINUTES: "10",
+    };
+    await run({ ...base, GITHUB_EVENT_NAME: "schedule" });
+    assert.deepEqual(calls, ["claim"], "Scheduled runs exit when idle");
+    calls.length = 0;
+    claims = 0;
+    // No SMTP password: deliver() reports a paused failure instead of sending anything.
+    await run({ ...base, GITHUB_EVENT_NAME: "workflow_dispatch", IDLE_MINUTES: "0.001" });
+    assert.ok(calls.includes("report"), "The email that appeared while waiting was handled");
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });

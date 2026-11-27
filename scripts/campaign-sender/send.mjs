@@ -46,6 +46,7 @@ export async function deliver(job, env = process.env, connection = null) {
           to: [{ email: job.to.email, name: job.to.name }],
           subject: job.subject,
           htmlContent: job.html,
+          ...(job.text ? { textContent: job.text } : {}),
         }),
         signal: AbortSignal.timeout(90000),
       });
@@ -85,6 +86,7 @@ export async function deliver(job, env = process.env, connection = null) {
       replyTo: from.address,
       subject: job.subject,
       html: job.html,
+      ...(job.text ? { text: job.text } : {}),
       messageId: `<campaign.${job.claim}@nsumibc.online>`,
       disableFileAccess: true,
       disableUrlAccess: true,
@@ -141,6 +143,14 @@ export async function run(env = process.env) {
       }
     }
   }
+  // A run started by hand waits a while for work, so pressing Run workflow
+  // just before Send, or resuming after Stop, still sends without another click.
+  // Scheduled runs and single-test diagnostics exit as soon as there is nothing to do.
+  const idleMs =
+    env.GITHUB_EVENT_NAME === "workflow_dispatch" && !env.CAMPAIGN_TEST_ID
+      ? Math.max(0, Number(env.IDLE_MINUTES ?? 15)) * 60000
+      : 0;
+  let idleSince = null;
   let accepted = 0;
   let connection;
   try {
@@ -151,9 +161,17 @@ export async function run(env = process.env) {
         testId: env.CAMPAIGN_TEST_ID || "",
       });
       if (job.stop) {
-        console.log(job.reason);
+        if (job.idle && idleMs) {
+          idleSince ??= Date.now();
+          if (Date.now() - idleSince < idleMs) {
+            await pause(Number(env.IDLE_POLL_MS) || 15000);
+            continue;
+          }
+          console.log(`Nothing queued for ${Math.round(idleMs / 1000)} seconds. Stopping.`);
+        } else console.log(job.reason);
         break;
       }
+      idleSince = null;
       if (job.wait) {
         await pause(Math.min(60, Math.max(0.05, job.wait)) * 1000);
         continue;

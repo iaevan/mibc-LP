@@ -82,13 +82,20 @@ export function parseTeamSheet(csv) {
   const teamColumn = labels.findIndex(
     (x) => x.startsWith("teamname") || x === "team",
   );
-  const starts = labels.flatMap((x, i) =>
-    /^(name|fullname|participantname|leadername|leaderfullname|leader|membername|teamleadername|teamleader)$/.test(
-      x,
-    )
-      ? [i]
-      : [],
-  );
+  // A member group starts at each name heading: "Name:", "Full Name",
+  // "Leader Name", "Name (Member 2)", "Member 3 Name", "Team Leader Name".
+  // Team, institute, university and user name headings are not member names.
+  const isName = (x) =>
+    (/^(full)?name/.test(x) ||
+      /name$/.test(x) ||
+      x === "leader" ||
+      x === "teamleader") &&
+    !/(institut|universit|school|college|user|nick|company|organi[sz])/.test(x) &&
+    (!x.includes("team") || x.includes("leader"));
+  const allStarts = labels.flatMap((x, i) => (i !== teamColumn && isName(x) ? [i] : []));
+  // Members come after the team name. A submitter name before it is not the leader.
+  const after = allStarts.filter((i) => i > teamColumn);
+  const starts = after.length ? after : allStarts;
   if (teamColumn < 0 || !starts.length)
     fail(
       400,
@@ -218,6 +225,14 @@ async function runInChunks(db, statements, size = 400) {
 const touchList = (db, id, now) =>
   db.prepare("UPDATE team_lists SET updated_at=? WHERE id=?").bind(now, id);
 
+const snapshot = (t) => ({
+  team: t.team,
+  leader_name: t.leader_name,
+  leader_email: t.leader_email,
+  members: t.members,
+  round: t.round,
+  shared_confirmed: t.shared_confirmed ? 1 : 0,
+});
 // A readable summary of a team edit, for the activity log.
 function describeEdit(before, after) {
   const changes = [];
@@ -303,8 +318,14 @@ export async function handleTeams(ctx) {
 
   if (section === "lists" && id) {
     const list = await getList(db, id);
-    if (!action && method === "GET")
+    if (!action && method === "GET") {
+      // Background refreshes send the version they have. If nothing changed,
+      // answer from the list row alone instead of reading every team again.
+      const since = Number(url.searchParams.get("since"));
+      if (since && list.updated_at <= since)
+        return json({ unchanged: true, updated_at: list.updated_at });
       return json({ ...list, teams: await listTeams(db, id) });
+    }
     if (method !== "POST") fail(405, "Method not allowed");
     if (action === "restore") {
       if (role !== "admin") fail(403, "Only main admins can restore team lists");
@@ -546,7 +567,7 @@ export async function handleTeams(ctx) {
       confirm
     )
       next.shared_confirmed = 0;
-    const { changes, detail } = describeEdit(current, next);
+    const { changes } = describeEdit(current, next);
     if (!changes.length) return json({ team: current, teams: null });
     const result = await db
       .prepare(
@@ -567,15 +588,39 @@ export async function handleTeams(ctx) {
       .run();
     if (!result.meta.changes)
       fail(409, "Someone else changed this team a moment ago. Reload this team.");
+    // Autosave fires after each pause in typing. Edits by the same person to
+    // the same team within two minutes become one log entry, measured from
+    // the team as it was before they started.
+    const previous = await db
+      .prepare(
+        "SELECT id,detail FROM activity WHERE list_id=? AND at>? AND team_id=? AND username=? AND action='edit_team' ORDER BY id DESC LIMIT 1",
+      )
+      .bind(list.id, now - 120000, id, user)
+      .first();
+    let before = snapshot(current);
+    try {
+      if (previous) before = JSON.parse(previous.detail).before || before;
+    } catch {
+      // A malformed earlier entry just starts a new one.
+    }
+    const merged = describeEdit(before, next).changes;
+    const summary = `Edited "${next.team || current.team || "Unnamed team"}": ${merged.join("; ")}`;
+    const detail = JSON.stringify({ before, after: snapshot(next) });
     await db.batch([
       touchList(db, list.id, now),
-      activity(db, user, {
-        list: list.id,
-        team: id,
-        action: "edit_team",
-        summary: `Edited "${next.team || current.team || "Unnamed team"}": ${changes.join("; ")}`,
-        detail,
-      }),
+      previous
+        ? merged.length
+          ? db
+              .prepare("UPDATE activity SET at=?,summary=?,detail=? WHERE id=?")
+              .bind(now, summary.slice(0, 600), detail, previous.id)
+          : db.prepare("DELETE FROM activity WHERE id=?").bind(previous.id)
+        : activity(db, user, {
+            list: list.id,
+            team: id,
+            action: "edit_team",
+            summary,
+            detail: { before, after: snapshot(next) },
+          }),
     ]);
     const teams = await listTeams(db, list.id);
     return json({ team: teams.find((t) => t.id === id), teams });

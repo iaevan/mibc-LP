@@ -335,6 +335,8 @@ function Draft({ email, setEmail }: { email: Email; setEmail: (e: Email) => void
   const go = async (next: number) => {
     await flush();
     setStep(next);
+    // Helpers may have fixed or moved teams meanwhile. Count from the latest list.
+    if (next === 2) await loadAudience().catch((problem) => setError(problem.message));
   };
   return (
     <>
@@ -360,7 +362,14 @@ function Draft({ email, setEmail }: { email: Email; setEmail: (e: Email) => void
       )}
       {step === 1 && <Compose email={email} editor={editor} change={change} audience={receiving} />}
       {step === 2 && (
-        <Send email={email} setEmail={setEmail} receiving={receiving} audience={audience} flush={flush} />
+        <Send
+          email={email}
+          setEmail={setEmail}
+          receiving={receiving}
+          audience={audience}
+          flush={flush}
+          refreshAudience={loadAudience}
+        />
       )}
       <div className={styles.row}>
         <button disabled={step === 0} onClick={() => void go(step - 1)}>
@@ -411,6 +420,7 @@ function Recipients({
             value={email.list_id || ""}
             onChange={(e) => change({ list_id: e.target.value, audience_round: 1, excluded: [] }, 0)}
           >
+            {!email.list_id && <option value="">Choose a team list</option>}
             {lists.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name} ({l.teams} teams)
@@ -640,12 +650,14 @@ function Send({
   receiving,
   audience,
   flush,
+  refreshAudience,
 }: {
   email: Email;
   setEmail: (e: Email) => void;
   receiving: AudienceTeam[];
   audience: AudienceTeam[];
   flush: () => Promise<void>;
+  refreshAudience: () => Promise<void>;
 }) {
   const task = useTask();
   const [testTo, setTestTo] = useState("");
@@ -765,7 +777,13 @@ function Send({
           )
             void task.run(async () => {
               await flush();
-              setEmail(await api<Email>(`emails/${email.id}/start`, { confirm: true, expected: receiving.length }));
+              try {
+                setEmail(await api<Email>(`emails/${email.id}/start`, { confirm: true, expected: receiving.length }));
+              } catch (problem) {
+                // The list changed since this screen loaded: show the new count to confirm.
+                if (problem instanceof ApiError && problem.status === 409) await refreshAudience().catch(() => undefined);
+                throw problem;
+              }
             });
         }}
       >
@@ -821,8 +839,21 @@ function Dashboard({ email, setEmail }: { email: Email; setEmail: (e: Email) => 
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const state = stats?.state || email.state;
+  // The 24-hour allowance count is the costly part, so it is fetched every
+  // 30 seconds while the counts refresh every few seconds.
+  const fullAt = useRef(0);
   const loadStats = useCallback(async () => {
-    setStats(await api<Stats>(`emails/${email.id}/stats`));
+    const full = Date.now() - fullAt.current > 30000;
+    const next = await api<Stats>(`emails/${email.id}/stats${full ? "?full=1" : ""}`);
+    if (full) fullAt.current = Date.now();
+    setStats((previous) =>
+      full || !previous
+        ? next
+        : {
+            ...next,
+            settings: { ...next.settings, used: previous.settings.used, resumeAt: previous.settings.resumeAt },
+          },
+    );
   }, [email.id]);
   const loadRows = useCallback(async () => {
     const params = new URLSearchParams({ status: filter, q: query, page: String(page) });
@@ -836,18 +867,30 @@ function Dashboard({ email, setEmail }: { email: Email; setEmail: (e: Email) => 
     return () => clearTimeout(timer);
   }, [loadRows]);
   useEffect(() => setPage(0), [filter, query]);
-  // Live updates: every 3 seconds while sending, slower otherwise.
+  // Live updates: counts every 3 seconds while sending, the team table every
+  // 15 seconds, both slower when idle and paused while the tab is hidden.
   useEffect(() => {
+    let tick = 0;
     const timer = setInterval(
       () => {
         if (document.hidden) return;
+        tick++;
         void loadStats().catch(() => undefined);
-        void loadRows().catch(() => undefined);
+        if (state !== "running" || tick % 5 === 0) void loadRows().catch(() => undefined);
       },
       state === "running" ? 3000 : 15000,
     );
     return () => clearInterval(timer);
   }, [state, loadStats, loadRows]);
+  // When sending finishes or stops, update the table and header at once.
+  const lastState = useRef(state);
+  useEffect(() => {
+    if (lastState.current !== state) {
+      lastState.current = state;
+      void loadRows().catch(() => undefined);
+      void api<Email>(`emails/${email.id}`).then(setEmail).catch(() => undefined);
+    }
+  }, [state, loadRows, email.id, setEmail]);
   const act = (action: string, body: object = {}, done = "") =>
     task.run(async () => {
       setEmail(await api<Email>(`emails/${email.id}/${action}`, body));
