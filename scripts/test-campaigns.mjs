@@ -25,6 +25,14 @@ sqlite.exec(
     "utf8",
   ),
 );
+const cleanupMigration = await readFile(
+  new URL(
+    "../campaign-migrations/0003_drop_replaced_team_lists.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+sqlite.exec(cleanupMigration);
 class Statement {
   constructor(sql, args = []) {
     this.sql = sql;
@@ -352,6 +360,40 @@ duplicateDraft = (
   })
 ).result;
 assert.ok(duplicateDraft.people.every((p) => !p.issue));
+// Saving a team list replaces the previous draft list instead of keeping every copy.
+const teamRows = (campaignId) =>
+  sqlite
+    .prepare(
+      "SELECT COUNT(*) n FROM recipients WHERE campaign_id=? AND is_test=0",
+    )
+    .get(campaignId).n;
+assert.equal(teamRows(copied.id), 2);
+// Rows left by an earlier interrupted save are removed by the next save.
+sqlite
+  .prepare(
+    "INSERT INTO recipients(id,campaign_id,import_id,team,name,email,members) VALUES(?,?,?,?,?,?,?)",
+  )
+  .run("stray", copied.id, "old-import", "Old", "Old", "old@example.com", "[]");
+assert.equal(teamRows(copied.id), 3);
+// A rejected stale save leaves no stray rows behind.
+const raceVersion = duplicateDraft.version;
+duplicateDraft = (
+  await call(`${copied.id}/import`, {
+    version: raceVersion,
+    teams: duplicateDraft.people,
+  })
+).result;
+await call(
+  `${copied.id}/import`,
+  { version: raceVersion, teams: duplicateDraft.people },
+  409,
+);
+assert.equal(teamRows(copied.id), 2);
+// The one-time cleanup keeps sent history and the active list of launched campaigns.
+const sentRows = teamRows(id);
+sqlite.exec(cleanupMigration);
+assert.equal(teamRows(id), sentRows);
+assert.equal(teamRows(copied.id), 2);
 await call(`${copied.id}/archive`, {});
 assert.equal((await call(`${copied.id}/restore`, {})).result.state, "draft");
 assert.equal((await call(id)).result.settings.perMinute, 20);

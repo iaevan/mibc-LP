@@ -540,12 +540,20 @@ async function route(request, env) {
           ),
       );
     }
-    const result = await db
-      .prepare(
-        "UPDATE campaigns SET import_id=?,version=version+1,updated_at=? WHERE id=? AND version=? AND state='draft'",
-      )
-      .bind(importId, Date.now(), id, b.version)
-      .run();
+    // Activate the new list and drop every other draft list in one transaction.
+    // If another session won the race, the delete removes this upload instead.
+    const [result] = await db.batch([
+      db
+        .prepare(
+          "UPDATE campaigns SET import_id=?,version=version+1,updated_at=? WHERE id=? AND version=? AND state='draft'",
+        )
+        .bind(importId, Date.now(), id, b.version),
+      db
+        .prepare(
+          "DELETE FROM recipients WHERE campaign_id=? AND is_test=0 AND import_id IS NOT (SELECT import_id FROM campaigns WHERE id=?) AND NOT EXISTS(SELECT 1 FROM attempts a WHERE a.recipient_id=recipients.id)",
+        )
+        .bind(id, id),
+    ]);
     if (!result.meta.changes)
       fail(409, "Draft changed. Reload and import again.");
   } else if (action === "test" && method === "POST") {

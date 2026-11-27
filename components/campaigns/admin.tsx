@@ -1282,8 +1282,12 @@ export function CampaignAdmin() {
                   disabled={busy}
                   onClick={() =>
                     void perform(async () => {
-                      if (step === 0 && !readonly) await saveTeams();
-                      else if (!readonly) await save();
+                      // Saving creates a new version and invalidates a passed test,
+                      // so only save when this step has unsaved edits.
+                      if (!readonly && dirty.current) {
+                        if (step === 0) await saveTeams();
+                        else await save();
+                      }
                       setStep(step + 1);
                     })
                   }
