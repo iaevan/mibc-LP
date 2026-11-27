@@ -3,8 +3,26 @@ import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function smtpTransport(env) {
+  return nodemailer.createTransport({
+    host: env.SMTP_HOST || "smtp.hostinger.com",
+    port: Number(env.SMTP_PORT) || 465,
+    secure: true,
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 100,
+    auth: {
+      user: env.SMTP_USER || "info@nsumibc.online",
+      pass: env.SMTP_PASSWORD,
+    },
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 90000,
+    tls: { minVersion: "TLSv1.2" },
+  });
+}
 // This transport boundary can be replaced without changing imports, campaigns or UI.
-export async function deliver(job, env = process.env) {
+export async function deliver(job, env = process.env, connection = null) {
   const from = {
     name: "NSU MIBC",
     address: env.SMTP_USER || "info@nsumibc.online",
@@ -59,16 +77,7 @@ export async function deliver(job, env = process.env) {
       error:
         "SMTP credentials missing or provider unsupported. Contact the administrator.",
     };
-  const smtp = nodemailer.createTransport({
-    host: env.SMTP_HOST || "smtp.hostinger.com",
-    port: Number(env.SMTP_PORT) || 465,
-    secure: true,
-    auth: { user: from.address, pass: env.SMTP_PASSWORD },
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 90000,
-    tls: { minVersion: "TLSv1.2" },
-  });
+  const smtp = connection || smtpTransport(env);
   try {
     const result = await smtp.sendMail({
       from,
@@ -97,7 +106,7 @@ export async function deliver(job, env = process.env) {
         : "SMTP connection interrupted. Check delivery before retrying.",
     };
   } finally {
-    smtp.close();
+    if (!connection) smtp.close();
   }
 }
 
@@ -133,25 +142,36 @@ export async function run(env = process.env) {
     }
   }
   let accepted = 0;
-  while (Date.now() < deadline - 120000) {
-    // Network retries reuse the claim. A second process cannot claim the same recipient.
-    const job = await api("claim", { claim: randomUUID() });
-    if (job.stop) {
-      console.log(job.reason);
-      break;
+  let connection;
+  try {
+    while (Date.now() < deadline - 120000) {
+      // Network retries reuse the claim. A second process cannot claim the same recipient.
+      const job = await api("claim", {
+        claim: randomUUID(),
+        testId: env.CAMPAIGN_TEST_ID || "",
+      });
+      if (job.stop) {
+        console.log(job.reason);
+        break;
+      }
+      if (job.wait) {
+        await pause(Math.min(60, Math.max(0.05, job.wait)) * 1000);
+        continue;
+      }
+      if (job.provider === "hostinger" && env.SMTP_PASSWORD && !connection)
+        connection = smtpTransport(env);
+      const result = await deliver(job, env, connection);
+      // Retry reporting only. Never retry deliver() after an uncertain response.
+      await api("report", { claim: job.claim, ...result });
+      if (result.ok) accepted++;
+      if (env.CAMPAIGN_TEST_ID) break;
+      if (result.pause) {
+        console.log("Campaign paused. Review the dashboard before resuming.");
+        break;
+      }
     }
-    if (job.wait) {
-      await pause(Math.min(60, Math.max(1, job.wait)) * 1000);
-      continue;
-    }
-    const result = await deliver(job, env);
-    // Retry reporting only. Never retry deliver() after an uncertain response.
-    await api("report", { claim: job.claim, ...result });
-    if (result.ok) accepted++;
-    if (result.pause) {
-      console.log("Campaign paused. Review the dashboard before resuming.");
-      break;
-    }
+  } finally {
+    connection?.close();
   }
   console.log(
     `${accepted} emails accepted by the provider in this run. No inbox delivery guarantee.`,

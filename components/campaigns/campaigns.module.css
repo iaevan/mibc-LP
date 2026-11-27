@@ -45,7 +45,7 @@
   background: #60364a;
 }
 .app button:active {
-  scale: 0.97;
+  scale: 0.96;
 }
 .app button:disabled {
   opacity: 0.5;
@@ -304,5 +304,222 @@
   }
   .stats .card:last-child {
     grid-column: 1/-1;
+  }
+}
+
+.helper {
+  display: block;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 4px 0;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.actions button {
+  padding: 8px 14px;
+}
+.campaignItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.campaignItem:last-child {
+  border: 0;
+}
+.campaignItem > div:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.app .danger {
+  background: transparent;
+  color: #ffbdc4;
+  border-color: #935563;
+}
+.app .danger:hover {
+  background: #501e2b;
+}
+.app .primary {
+  background: #ead5c5;
+  color: #321522;
+}
+.teamList {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.teamListItem + .teamListItem {
+  border-top: 1px solid var(--line);
+}
+.teamRow {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+.teamRow h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.teamRow .include {
+  margin: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.teamDetails {
+  padding: 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.teamDetails .row {
+  margin: 0 0 14px;
+}
+.teamDetails .compactLabel {
+  margin: 12px 0 16px;
+  max-width: 560px;
+}
+.members {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.member {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.memberHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.memberHead > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.memberHead button {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+.memberRole {
+  display: block;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.memberFacts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin: 0;
+}
+.memberFacts > div {
+  min-width: 0;
+}
+.memberFacts dt {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.memberFacts dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+.memberFacts > div:first-child,
+.memberFacts > div:nth-child(2) {
+  grid-column: 1/-1;
+}
+.memberForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.memberForm label {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.memberForm label:nth-child(2),
+.memberForm label:nth-child(3) {
+  grid-column: 1/-1;
+}
+.memberForm label:first-child {
+  grid-column: 1/-1;
+}
+.memberForm input {
+  padding: 10px !important;
+}
+.teamDetails > .row:last-of-type {
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+.flag {
+  font-size: 0.875rem;
+  color: #ffbdc4;
+  margin: 4px 0;
+}
+.reviewHelp {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 0;
+  list-style-position: inside;
+  margin: 20px 0;
+}
+.reviewHelp li {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+.reviewHelp strong {
+  display: inline;
+}
+.reviewHelp span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+@media (max-width: 760px) {
+  .campaignItem {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .teamRow {
+    grid-template-columns: 28px minmax(0, 1fr);
+    padding: 12px;
+  }
+  .teamRow > .actions {
+    grid-column: 2;
+  }
+  .members {
+    grid-template-columns: 1fr;
+  }
+  .teamDetails {
+    padding: 14px;
+  }
+  .reviewHelp {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .reviewHelp li {
+    padding: 10px 0;
+  }
+  .memberHead {
+    flex-wrap: wrap;
+  }
+  .memberForm {
+    gap: 10px;
   }
 }

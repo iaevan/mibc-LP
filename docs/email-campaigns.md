@@ -26,17 +26,22 @@ The campaign backend does not have ticket database or ticket-image bindings. The
 4. Compose the subject and body. Paste formatted Google Docs content or upload HTML. Bold, italic, underline, lists, links, tables and basic alignment are supported. Scripts, external images and unsafe styling are removed. Save explicitly before leaving the step.
 5. Use `{{team_name}}` and `{{recipient_name}}` in the subject or body. Choose a team in Review & test to see its personalized copy. Unsupported or incomplete placeholders block sending.
 6. Queue a test to your own address. Wait for the scheduled sender and inspect the actual email. Provider acceptance of the current saved version is required before launch. Editing the template or team list invalidates the previous test.
-7. Start sending only after reviewing the selected recipients. Launch freezes the campaign and recipient list; create a new campaign when content needs to change after launch.
+7. Check the confirmation box after reviewing the actual test email and selected recipients. Launch freezes the campaign and recipient list. Use **Copy and edit** to prepare corrected content after launch; the new copy starts as a draft and needs a fresh test.
 8. Use Sending & results to pause, resume, search, filter, export results, retry failed emails or resend an individual copy. A paused sender may finish its one in-progress email.
+
+The campaign list offers Add campaign, Edit or View results, Rename, Delete and View trash. Delete moves a stopped campaign to restorable Trash, preserving delivery history. Pause a running campaign and let its in-progress email finish before deleting. Restore does not start sending.
+
+Draft teams support manual Add team and Remove team. Open Edit details to see separately labeled member information. Edit member changes names, addresses, institute, student ID and phone. Member 1 remains the email recipient, and changes to their name/address also update the selected recipient. Extra members can be added or removed. Save team changes before moving to the next step. Missing or duplicated recipient addresses are flagged; a shared address needs confirmation.
 
 `Provider accepted` is not proof of inbox delivery. Hostinger SMTP does not supply a recipient delivery webhook here, so bounces, spam placement and opens are not presented as delivery facts. There is no tracking pixel.
 
 ## Limits and failure recovery
 
-- Defaults: one attempt per minute and at most 900 reserved attempts in a rolling 24 hours. Tests and resends count. Hostinger Business Starter's advertised mailbox limit is 1,000 messages per day; the 900 setting leaves some headroom but cannot reserve capacity against the other sender.
-- At one per minute, 500 team emails take about 8 hours 20 minutes, plus scheduling delays. This configuration does not promise 3,000 recipients in one or two hours.
+- Target: 20 attempts per minute, with a configurable maximum of 25 for Hostinger and at most 900 reserved attempts in a rolling 24 hours. Tests and resends count. Hostinger Business Starter's advertised mailbox limit is 1,000 messages per day; the 900 setting leaves some headroom but cannot reserve capacity against the other sender. The public limits page does not guarantee a specific minute-level SMTP allowance. Provider throttling pauses sending.
+- At the 20-per-minute target, 500 team emails would take about 25 minutes plus provider and scheduling delays. Actual SMTP latency can reduce throughput. This does not remove the rolling daily allowance.
 - The import/API data model is tested with 3,000 teams and accepts up to 10,000 within the upload size limit. Sending capacity is independent of import capacity.
-- GitHub scheduled runs can be delayed. Each active run can continue for 330 minutes; subsequent runs pick up the queue. Runs exit promptly when idle. Manual **Run workflow** on Campaign sender can start a queued test without waiting for the schedule.
+- GitHub scheduled runs can be delayed. Each active run can continue for 330 minutes; subsequent runs pick up the queue. Runs exit promptly when idle. Manual **Run workflow** on Campaign sender can start a queued test without waiting for the schedule. Its optional `test_id` input claims only that queued test and stops after one attempt, so diagnostic runs cannot start unrelated participant sends.
+- The SMTP sender reuses one secure pooled connection and processes one claim at a time. Provider refusal pauses the affected campaign; ambiguous outcomes still require review rather than automatic resend.
 - GitHub may disable schedules in inactive public repositories. Check Actions if the dashboard's sender heartbeat stops.
 - Claims and attempt reservations are atomic. Network retries reuse a claim; reporting is idempotent. A process crash after SMTP acceptance is treated as uncertain, rather than automatically retried.
 - An abandoned claim becomes uncertain after ten minutes and pauses a running campaign. Check Hostinger Sent/provider logs or the recipient first. Then confirm delivery without resending, or explicitly retry while accepting the risk of a duplicate.

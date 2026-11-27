@@ -2,28 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import styles from "./campaigns.module.css";
+import { TeamDetails, type Person } from "./team-details";
 
-type Member = {
-  name: string;
-  email: string;
-  institute?: string;
-  studentId?: string;
-  phone?: string;
-};
-type Person = {
-  id: string;
-  team: string;
-  name: string;
-  email: string;
-  members: Member[];
-  issue: string;
-  enabled: number | boolean;
-  status?: string;
-  error?: string;
-  is_test?: number;
-  attempts?: number;
-  sent_at?: number;
-};
 type Settings = {
   provider: string;
   dailyLimit: number;
@@ -52,6 +32,7 @@ type Campaign = {
   settings: Settings;
   history: Attempt[];
   last_error?: string;
+  archived_at?: number;
 };
 type Summary = { id: string; name: string; state: string };
 class ApiError extends Error {
@@ -129,7 +110,10 @@ export function CampaignAdmin() {
   const [selected, setSelected] = useState("");
   const [query, setQuery] = useState("");
   const [testEmail, setTestEmail] = useState("");
+  const [testReviewed, setTestReviewed] = useState(false);
+  useEffect(() => setTestReviewed(false), [campaign?.id, campaign?.version]);
   const [status, setStatus] = useState("all");
+  const [trash, setTrash] = useState(false);
   const [newName, setNewName] = useState("");
   const [page, setPage] = useState(0);
   const editor = useRef<HTMLDivElement>(null);
@@ -151,8 +135,8 @@ export function CampaignAdmin() {
       setBusy(false);
     }
   }
-  async function refreshList() {
-    setList(await api<Summary[]>(""));
+  async function refreshList(showTrash = trash) {
+    setList(await api<Summary[]>(showTrash ? "?trash=1" : ""));
   }
   function accept(next: Campaign) {
     setCampaign(next);
@@ -174,7 +158,7 @@ export function CampaignAdmin() {
   useEffect(() => {
     if (!campaign || step < 2) return;
     const timer = setInterval(() => {
-      if (dirty.current) return;
+      if (dirty.current || document.hidden) return;
       api<Campaign>(campaign.id)
         .then(accept)
         .catch((problem) => setError(problem.message));
@@ -210,7 +194,26 @@ export function CampaignAdmin() {
   function editTeam(id: string, patch: Partial<Person>) {
     dirty.current = true;
     setTeams((current) =>
-      current.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+      current.map((p) => {
+        if (p.id !== id) return p;
+        const next = { ...p, ...patch };
+        if (patch.email !== undefined && patch.email !== p.email)
+          next.shared_confirmed = 0;
+        next.issue = !next.team.trim()
+          ? "Missing team name"
+          : !next.name.trim()
+            ? "Missing first participant name"
+            : !/^\S+@\S+\.\S+$/.test(next.email)
+              ? "Invalid first participant email"
+              : current.some(
+                    (other) =>
+                      other.id !== id &&
+                      other.email.toLowerCase() === next.email.toLowerCase(),
+                  ) && !next.shared_confirmed
+                ? "Shared recipient address. Confirm this team should receive its own email."
+                : "";
+        return next;
+      }),
     );
   }
   async function saveTeams() {
@@ -362,29 +365,113 @@ export function CampaignAdmin() {
                   })
                 }
               >
-                New campaign
+                Add campaign
+              </button>
+            </div>
+            <div className={styles.row}>
+              <span>
+                {list.length} {trash ? "deleted" : "active"} campaigns
+              </span>
+              <button
+                disabled={busy}
+                onClick={() =>
+                  void perform(async () => {
+                    setTrash(!trash);
+                    await refreshList(!trash);
+                  })
+                }
+              >
+                {trash ? "Show active campaigns" : "View trash"}
               </button>
             </div>
             <div className={styles.card}>
               {list.length ? (
                 list.map((item) => (
-                  <button
-                    className={styles.listItem}
-                    key={item.id}
-                    onClick={() =>
-                      void perform(async () => {
-                        accept(await api<Campaign>(item.id));
-                        setStep(item.state === "draft" ? 0 : 3);
-                      })
-                    }
-                  >
-                    <strong>{item.name}</strong>
-                    <span>{item.state} →</span>
-                  </button>
+                  <article className={styles.campaignItem} key={item.id}>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span className={styles.helper}>
+                        {item.state === "done" ? "Completed" : item.state}
+                      </span>
+                    </div>
+                    <div className={styles.actions}>
+                      {trash ? (
+                        <button
+                          disabled={busy}
+                          onClick={() =>
+                            void perform(async () => {
+                              await api(item.id + "/restore", {});
+                              await refreshList(true);
+                              setNotice("Campaign restored");
+                            })
+                          }
+                        >
+                          Restore
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            disabled={busy}
+                            onClick={() =>
+                              void perform(async () => {
+                                accept(await api<Campaign>(item.id));
+                                setStep(item.state === "draft" ? 0 : 3);
+                                setQuery("");
+                                setSelected("");
+                              })
+                            }
+                          >
+                            {item.state === "draft" ? "Edit" : "View results"}
+                          </button>
+                          <button
+                            disabled={busy}
+                            onClick={() =>
+                              void perform(async () => {
+                                const name = window.prompt(
+                                  "Campaign name",
+                                  item.name,
+                                );
+                                if (name?.trim()) {
+                                  await api(item.id + "/rename", { name });
+                                  await refreshList();
+                                }
+                              })
+                            }
+                          >
+                            Rename
+                          </button>
+                          <button
+                            className={styles.danger}
+                            disabled={busy || item.state === "running"}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  "Move this campaign to Trash? You can restore it later.",
+                                )
+                              )
+                                void perform(async () => {
+                                  await api(item.id + "/archive", {});
+                                  await refreshList();
+                                  setNotice(
+                                    "Moved to Trash. You can restore it from View trash.",
+                                  );
+                                });
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </article>
                 ))
               ) : (
-                <p>Create your first campaign to upload teams.</p>
-              )}
+                <p>
+                  {trash
+                    ? "Trash is empty. Deleted campaigns can be restored here."
+                    : "Create your first campaign to upload teams."}
+                </p>
+              )}{" "}
             </div>
           </>
         ) : (
@@ -406,7 +493,31 @@ export function CampaignAdmin() {
                 ← Campaigns
               </button>
               <strong>{campaign.name}</strong>
-              <span>{campaign.state}</span>
+              <div className={styles.actions}>
+                <span>{campaign.state}</span>
+                <button
+                  disabled={busy}
+                  onClick={() => {
+                    if (
+                      dirty.current &&
+                      !window.confirm(
+                        "Discard unsaved edits and copy the saved version?",
+                      )
+                    )
+                      return;
+                    void perform(async () => {
+                      accept(await api<Campaign>(campaign.id + "/copy", {}));
+                      setSelected("");
+                      setStep(0);
+                      setNotice(
+                        "A new editable draft was created. Review it and send a fresh test before launch.",
+                      );
+                    });
+                  }}
+                >
+                  Copy and edit
+                </button>
+              </div>
             </div>
             <nav className={styles.steps} aria-label="Campaign steps">
               {["Teams", "Compose", "Review & test", "Sending & results"].map(
@@ -430,7 +541,7 @@ export function CampaignAdmin() {
             </nav>
             {step === 0 && (
               <>
-                <h1>Upload your teams</h1>
+                <h1>Teams and recipients</h1>
                 <p>One email per team, sent to the first listed participant.</p>
                 <section className={styles.card}>
                   <label>
@@ -479,109 +590,109 @@ export function CampaignAdmin() {
                     onChange={(event) => setQuery(event.target.value)}
                   />
                 </label>
-                <div className={styles.teamGrid}>
+                <div className={styles.row}>
+                  <span className={styles.helper}>
+                    Edit a team to correct any member’s details. Save changes
+                    before continuing.
+                  </span>
+                  <button
+                    disabled={busy || readonly}
+                    onClick={() => {
+                      const id = crypto.randomUUID();
+                      setTeams((current) => [
+                        {
+                          id,
+                          team: "",
+                          name: "",
+                          email: "",
+                          members: [{ name: "", email: "" }],
+                          enabled: true,
+                          issue: "Add the team name and first member details",
+                        },
+                        ...current,
+                      ]);
+                      setSelected(id);
+                      setQuery("");
+                      setPage(0);
+                      dirty.current = true;
+                    }}
+                  >
+                    Add team
+                  </button>
+                </div>
+                <div className={styles.teamList}>
                   {pageTeams.map((p) => (
-                    <article className={styles.card} key={p.id}>
-                      <h2>{p.team || "Unnamed team"}</h2>
-                      <label>
-                        <span>
+                    <article className={styles.teamListItem} key={p.id}>
+                      <div className={styles.teamRow}>
+                        <label className={styles.include}>
                           <input
+                            aria-label={"Include " + (p.team || "new team")}
                             type="checkbox"
                             checked={!!p.enabled}
-                            disabled={readonly}
-                            onChange={(event) =>
-                              editTeam(p.id, { enabled: event.target.checked })
+                            disabled={readonly || busy}
+                            onChange={(e) =>
+                              editTeam(p.id, { enabled: e.target.checked })
                             }
-                          />{" "}
-                          Include this team
-                        </span>
-                      </label>
-                      <p>
-                        {p.name || "Missing first participant"}
-                        <br />
-                        {p.email || "Missing email"}
-                      </p>
-                      {p.issue && <p className={styles.error}>{p.issue}</p>}
-                      <button onClick={() => setSelected(p.id)}>
-                        View / correct team
-                      </button>
+                          />
+                        </label>
+                        <div>
+                          <h2>{p.team || "Unnamed team"}</h2>
+                          <p className={styles.helper}>
+                            {p.name || "Missing recipient"} ·{" "}
+                            {p.email || "Missing email"} · {p.members.length}{" "}
+                            members
+                          </p>
+                          {p.issue && <p className={styles.flag}>{p.issue}</p>}
+                        </div>
+                        <div className={styles.actions}>
+                          <button
+                            aria-expanded={selected === p.id}
+                            onClick={() =>
+                              setSelected(selected === p.id ? "" : p.id)
+                            }
+                          >
+                            {selected === p.id
+                              ? "Close"
+                              : readonly
+                                ? "Details"
+                                : "Edit details"}
+                          </button>
+                          {!readonly && (
+                            <button
+                              disabled={busy}
+                              className={styles.danger}
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    "Remove this team from the draft? Save the team list to apply.",
+                                  )
+                                ) {
+                                  setTeams((current) =>
+                                    current.filter((team) => team.id !== p.id),
+                                  );
+                                  if (selected === p.id) setSelected("");
+                                  dirty.current = true;
+                                }
+                              }}
+                            >
+                              Remove team
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {selected === p.id && (
+                        <TeamDetails
+                          person={p}
+                          readonly={readonly}
+                          busy={busy}
+                          onChange={(patch) => editTeam(p.id, patch)}
+                          onSave={() => void perform(saveTeams)}
+                          onClose={() => setSelected("")}
+                        />
+                      )}
                     </article>
                   ))}
                 </div>
-                {selected && activePerson && (
-                  <section className={styles.card}>
-                    <div className={styles.row}>
-                      <h2>{activePerson.team || "Team details"}</h2>
-                      <button onClick={() => setSelected("")}>
-                        Close details
-                      </button>
-                    </div>
-                    <div className={styles.columns}>
-                      <div>
-                        <label>
-                          Team name
-                          <input
-                            disabled={readonly}
-                            value={activePerson.team}
-                            onChange={(e) =>
-                              editTeam(activePerson.id, {
-                                team: e.target.value,
-                              })
-                            }
-                          />
-                        </label>
-                        <label>
-                          First participant
-                          <input
-                            disabled={readonly}
-                            value={activePerson.name}
-                            onChange={(e) =>
-                              editTeam(activePerson.id, {
-                                name: e.target.value,
-                              })
-                            }
-                          />
-                        </label>
-                        <label>
-                          Recipient email
-                          <input
-                            disabled={readonly}
-                            type="email"
-                            value={activePerson.email}
-                            onChange={(e) =>
-                              editTeam(activePerson.id, {
-                                email: e.target.value,
-                              })
-                            }
-                          />
-                        </label>
-                        <button
-                          disabled={readonly}
-                          onClick={() =>
-                            editTeam(activePerson.id, { issue: "" })
-                          }
-                        >
-                          Confirm correction / shared address
-                        </button>
-                        <p>Save the team list after correcting a recipient.</p>
-                      </div>
-                      <div>
-                        <h3>Registered team members</h3>
-                        {activePerson.members.map((member, i) => (
-                          <p key={i}>
-                            <strong>{member.name}</strong>
-                            <br />
-                            {member.email}
-                            <br />
-                            {member.institute} · {member.studentId}
-                            <br />
-                            {member.phone}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  </section>
-                )}
               </>
             )}
             {step === 1 && (
@@ -712,10 +823,23 @@ export function CampaignAdmin() {
                           )
                           .forEach((el) => el.remove());
                         doc.querySelectorAll<HTMLElement>("*").forEach((el) => {
-                          const oldStyle=el.style;
-                          const safeStyle=['text-align','font-weight','font-style','text-decoration'].map(key=>[key,oldStyle.getPropertyValue(key)]).filter(([,value])=>/^(left|right|center|bold|normal|[1-9]00|italic|underline)$/.test(value));
-                          el.removeAttribute('style');
-                          safeStyle.forEach(([key,value])=>el.style.setProperty(key,value));
+                          const oldStyle = el.style;
+                          const safeStyle = [
+                            "text-align",
+                            "font-weight",
+                            "font-style",
+                            "text-decoration",
+                          ]
+                            .map((key) => [key, oldStyle.getPropertyValue(key)])
+                            .filter(([, value]) =>
+                              /^(left|right|center|bold|normal|[1-9]00|italic|underline)$/.test(
+                                value,
+                              ),
+                            );
+                          el.removeAttribute("style");
+                          safeStyle.forEach(([key, value]) =>
+                            el.style.setProperty(key, value),
+                          );
                           [...el.attributes].forEach((a) => {
                             if (
                               a.name !== "style" &&
@@ -762,6 +886,27 @@ export function CampaignAdmin() {
             {step === 2 && (
               <>
                 <h1>Review and test</h1>
+                <ol className={styles.reviewHelp}>
+                  <li>
+                    <strong>Preview a team</strong>
+                    <span>
+                      Check the recipient and personalized wording below.
+                    </span>
+                  </li>
+                  <li>
+                    <strong>Send yourself a test</strong>
+                    <span>
+                      Enter your address. Only that address receives the test.
+                    </span>
+                  </li>
+                  <li>
+                    <strong>Check your inbox</strong>
+                    <span>
+                      After the test is accepted, review the actual email before
+                      starting the campaign.
+                    </span>
+                  </li>
+                </ol>
                 <div className={styles.columns}>
                   <section className={styles.card}>
                     <label>
@@ -787,8 +932,8 @@ export function CampaignAdmin() {
                       one copy per selected recipient
                     </p>
                     <p>
-                      {campaign.settings.provider} ·{" "}
-                      {campaign.settings.perMinute} per minute
+                      {campaign.settings.provider} · Target:{" "}
+                      {campaign.settings.perMinute} emails per minute
                       <br />
                       {campaign.settings.used} / {campaign.settings.dailyLimit}{" "}
                       reserved attempts in 24 hours
@@ -810,7 +955,7 @@ export function CampaignAdmin() {
                             recipientId: activePerson?.id,
                           });
                           setNotice(
-                            "Test queued. The scheduled sender will pick it up.",
+                            "Test queued for your test address only. The sender checks about every 10 minutes; a scheduled run may be delayed.",
                           );
                         })
                       }
@@ -819,8 +964,8 @@ export function CampaignAdmin() {
                     </button>
                     <p>
                       {campaign.tested_version === campaign.version
-                        ? "✓ Current draft test accepted by provider"
-                        : "A successful test of this saved version is required."}
+                        ? "Test accepted by the email provider. Check your inbox and spam folder before launch."
+                        : "Send a successful test of this saved version to unlock Start sending. Saving edits requires a new test."}
                     </p>
                     {campaign.people
                       .filter((p) => p.is_test)
@@ -829,9 +974,22 @@ export function CampaignAdmin() {
                           Test to {p.email} · {p.status} {p.error}
                         </p>
                       ))}
+                    {campaign.tested_version === campaign.version && (
+                      <label>
+                        <span>
+                          <input
+                            type="checkbox"
+                            checked={testReviewed}
+                            onChange={(e) => setTestReviewed(e.target.checked)}
+                          />{" "}
+                          I reviewed the test email and recipient list
+                        </span>
+                      </label>
+                    )}
                     <button
                       disabled={
                         busy ||
+                        !testReviewed ||
                         campaign.state !== "draft" ||
                         campaign.tested_version !== campaign.version
                       }
@@ -842,7 +1000,7 @@ export function CampaignAdmin() {
                           )
                         )
                           void perform(async () => {
-                            await action("start");
+                            await action("start", { reviewed: true });
                             setStep(3);
                           });
                       }}

@@ -19,6 +19,12 @@ sqlite.exec(
     "utf8",
   ),
 );
+sqlite.exec(
+  await readFile(
+    new URL("../campaign-migrations/0002_campaign_trash.sql", import.meta.url),
+    "utf8",
+  ),
+);
 class Statement {
   constructor(sql, args = []) {
     this.sql = sql;
@@ -142,7 +148,7 @@ await call(
   { version: c.version - 1, subject: "stale", html: "old" },
   409,
 );
-await call(`${id}/start`, {}, 409);
+await call(`${id}/start`, { reviewed: true }, 409);
 c = (
   await call(`${id}/test`, {
     email: "admin@example.com",
@@ -159,13 +165,13 @@ await runner("report", { claim, ok: true, messageId: "test-accepted" });
 await runner("report", { claim, ok: false }); // Idempotent report.
 c = (await call(id)).result;
 assert.equal(c.tested_version, c.version);
-c = (await call(`${id}/start`, {})).result;
+c = (await call(`${id}/start`, { reviewed: true })).result;
 assert.equal(c.state, "running");
 await call(`${id}/import`, { version: c.version, teams }, 409);
 await call(`${id}/pause`, {});
 resetRate();
 assert.ok((await runner("claim", { claim: crypto.randomUUID() })).result.stop);
-await call(`${id}/start`, {});
+await call(`${id}/start`, { reviewed: true });
 resetRate();
 const primary = crypto.randomUUID();
 job = (await runner("claim", { claim: primary })).result;
@@ -183,7 +189,7 @@ assert.equal(c.state, "paused");
 assert.equal(c.people.find((p) => !p.is_test).status, "uncertain");
 await call(`${id}/retry`, { status: "uncertain" }, 400);
 c = (await call(`${id}/retry`, { status: "uncertain", confirm: true })).result;
-await call(`${id}/start`, {});
+await call(`${id}/start`, { reviewed: true });
 resetRate();
 const retry = crypto.randomUUID();
 job = (await runner("claim", { claim: retry })).result;
@@ -200,7 +206,7 @@ assert.equal(c.history.length, 3);
 // Resends require an explicit confirmation, and reserve quota again.
 await call(`${id}/retry`, { status: "sent" }, 400);
 await call(`${id}/retry`, { status: "sent", confirm: true });
-await call(`${id}/start`, {});
+await call(`${id}/start`, { reviewed: true });
 resetRate();
 env.CAMPAIGN_DAILY_LIMIT = "3";
 assert.ok((await runner("claim", { claim: crypto.randomUUID() })).result.stop);
@@ -275,16 +281,92 @@ large = (
 ).result;
 assert.equal(large.people.length, 3000);
 // A failed transport test must not freeze a draft or bypass the test requirement.
-env.CAMPAIGN_DAILY_LIMIT = '900';
-large = (await call(`${large.id}/save`, { version:large.version,name:large.name,subject:'Test {{team_name}}',html:'<p>Hello {{team_name}}</p>' })).result;
-await call(`${large.id}/test`,{email:'test@example.com',recipientId:large.people[0].id});
+env.CAMPAIGN_DAILY_LIMIT = "900";
+large = (
+  await call(`${large.id}/save`, {
+    version: large.version,
+    name: large.name,
+    subject: "Test {{team_name}}",
+    html: "<p>Hello {{team_name}}</p>",
+  })
+).result;
+await call(`${large.id}/test`, {
+  email: "test@example.com",
+  recipientId: large.people[0].id,
+});
 resetRate();
-const failedTest=crypto.randomUUID();
-assert.equal((await runner('claim',{claim:failedTest})).result.to.email,'test@example.com');
-await runner('report',{claim:failedTest,ok:false,pause:true,error:'Synthetic SMTP failure'});
-large=(await call(large.id)).result;
-assert.equal(large.state,'draft');
-await call(`${large.id}/start`,{},409);
+const failedTest = crypto.randomUUID();
+assert.equal(
+  (await runner("claim", { claim: failedTest })).result.to.email,
+  "test@example.com",
+);
+await runner("report", {
+  claim: failedTest,
+  ok: false,
+  pause: true,
+  error: "Synthetic SMTP failure",
+});
+large = (await call(large.id)).result;
+assert.equal(large.state, "draft");
+await call(`${large.id}/start`, { reviewed: true }, 409);
+// Campaign controls retain audit/delivery records and cannot delete active sending.
+await call(`${id}/archive`, {}, 409);
+await call(`${id}/pause`, {});
+await call(`${id}/rename`, { name: "Renamed campaign" });
+await call(`${id}/archive`, {});
+assert.ok(!(await call("")).result.some((c) => c.id === id));
+assert.ok((await call("?trash=1")).result.some((c) => c.id === id));
+await call(
+  `${id}/save`,
+  { version: 1, name: "bad", subject: "x", html: "x" },
+  409,
+);
+const restored = (await call(`${id}/restore`, {})).result;
+assert.equal(restored.state, "paused");
+assert.equal(restored.name, "Renamed campaign");
+const copied = (await call(`${id}/copy`, {})).result;
+assert.equal(copied.state, "draft");
+assert.equal(copied.tested_version, null);
+assert.equal(copied.people.length, 1);
+assert.equal(copied.people[0].attempts, 0);
+assert.equal(copied.people[0].status, "queued");
+assert.notEqual(
+  copied.people[0].id,
+  restored.people.find((p) => !p.is_test).id,
+);
+const duplicates = [
+  { ...teams[0], team: "One" },
+  { ...teams[0], team: "Two" },
+];
+let duplicateDraft = (
+  await call(`${copied.id}/import`, {
+    version: copied.version,
+    teams: duplicates,
+  })
+).result;
+assert.ok(duplicateDraft.people.some((p) => p.issue.startsWith("Shared")));
+duplicateDraft = (
+  await call(`${copied.id}/import`, {
+    version: duplicateDraft.version,
+    teams: duplicateDraft.people.map((p) => ({ ...p, shared_confirmed: 1 })),
+  })
+).result;
+assert.ok(duplicateDraft.people.every((p) => !p.issue));
+await call(`${copied.id}/archive`, {});
+assert.equal((await call(`${copied.id}/restore`, {})).result.state, "draft");
+assert.equal((await call(id)).result.settings.perMinute, 20);
+env.CAMPAIGN_PER_MINUTE = "100";
+assert.equal((await call(id)).result.settings.perMinute, 25);
+// A manual diagnostic can claim only its specified test, never another test or team.
+const checkA=(await call(`${id}/copy`,{})).result;
+const checkB=(await call(`${id}/copy`,{})).result;
+await call(`${checkA.id}/test`,{email:'a@example.com',recipientId:checkA.people[0].id});
+const checkBQueued=(await call(`${checkB.id}/test`,{email:'b@example.com',recipientId:checkB.people[0].id})).result;
+const target=checkBQueued.people.find(p=>p.is_test);
+resetRate();const targetedClaim=crypto.randomUUID();
+assert.equal((await runner('claim',{claim:targetedClaim,testId:target.id})).result.to.email,'b@example.com');
+await runner('report',{claim:targetedClaim,ok:false,error:'Synthetic test only'});
+resetRate();assert.ok((await runner('claim',{claim:crypto.randomUUID(),testId:'not-a-queued-test'})).result.stop);
 sqlite.close();
 console.log(
   "Campaign integration checks passed: auth, isolation, CSV recipient selection, sanitizing, preview tokens, draft conflicts, required tests, claim/report recovery, pause, resends and quota. No emails sent.",

@@ -15,6 +15,6 @@
     "PUBLIC_ORIGIN": "https://nsumibc.online",
     "CAMPAIGN_PROVIDER": "hostinger",
     "CAMPAIGN_DAILY_LIMIT": "900",
-    "CAMPAIGN_PER_MINUTE": "1"
+    "CAMPAIGN_PER_MINUTE": "20"
   }
 }

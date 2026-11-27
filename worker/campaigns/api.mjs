@@ -11,10 +11,21 @@ const fail = (status, message) => {
   throw new CampaignError(status, message);
 };
 const validEmail = (value) => {
-  if(typeof value!=="string"||value.length>254)return false;
-  const parts=value.split('@');if(parts.length!==2)return false;
-  const [local,domain]=parts;
-  return local.length<=64&&/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+$/i.test(local)&&!local.startsWith('.')&&!local.endsWith('.')&&!local.includes('..')&&domain.includes('.')&&domain.split('.').every(label=>/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label));
+  if (typeof value !== "string" || value.length > 254) return false;
+  const parts = value.split("@");
+  if (parts.length !== 2) return false;
+  const [local, domain] = parts;
+  return (
+    local.length <= 64 &&
+    /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+$/i.test(local) &&
+    !local.startsWith(".") &&
+    !local.endsWith(".") &&
+    !local.includes("..") &&
+    domain.includes(".") &&
+    domain
+      .split(".")
+      .every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label))
+  );
 };
 const clean = (value) => String(value ?? "").trim();
 const inline = (value) =>
@@ -203,7 +214,7 @@ async function settings(db, env) {
   );
   const rate =
     provider === "hostinger"
-      ? 1
+      ? Math.max(1, Math.min(25, Number(env.CAMPAIGN_PER_MINUTE) || 20))
       : Math.max(1, Math.min(50, Number(env.CAMPAIGN_PER_MINUTE) || 1));
   const used = await db
     .prepare("SELECT COUNT(*) AS n FROM attempts WHERE started_at>?")
@@ -332,7 +343,7 @@ async function route(request, env) {
       (
         await db
           .prepare(
-            "SELECT id,name,state,updated_at FROM campaigns ORDER BY updated_at DESC LIMIT 100",
+            `SELECT id,name,state,updated_at,archived_at FROM campaigns WHERE archived_at IS ${url.searchParams.get("trash") === "1" ? "NOT " : ""}NULL ORDER BY updated_at DESC LIMIT 100`,
           )
           .all()
       ).results,
@@ -355,6 +366,95 @@ async function route(request, env) {
   const c = await campaign(db, id);
   if (!action && method === "GET") return json(await detail(db, id, env));
   const b = method === "GET" ? {} : await body(request);
+  if (action === "archive" && method === "POST") {
+    if (
+      c.state === "running" ||
+      (
+        await db
+          .prepare(
+            "SELECT COUNT(*) n FROM recipients WHERE campaign_id=? AND status='sending'",
+          )
+          .bind(id)
+          .first()
+      ).n
+    )
+      fail(
+        409,
+        "Pause sending and wait for the current email to finish before deleting.",
+      );
+    const archived = await db
+      .prepare(
+        "UPDATE campaigns SET archived_at=?,archived_state=state,state='archived',updated_at=? WHERE id=? AND archived_at IS NULL AND state!='running' AND NOT EXISTS(SELECT 1 FROM recipients WHERE campaign_id=? AND status='sending')",
+      )
+      .bind(Date.now(), Date.now(), id, id)
+      .run();
+    if (!archived.meta.changes)
+      fail(
+        409,
+        "Campaign changed or an email is in progress. Refresh before deleting.",
+      );
+    await db.batch([
+      db
+        .prepare(
+          "UPDATE recipients SET status='cancelled' WHERE campaign_id=? AND is_test=1 AND status='queued'",
+        )
+        .bind(id),
+      audit(db, user, "move_to_trash", id),
+    ]);
+    return json({ ok: true });
+  }
+  if (action === "restore" && method === "POST") {
+    await db.batch([
+      db
+        .prepare(
+          "UPDATE campaigns SET state=COALESCE(archived_state,'draft'),archived_at=NULL,archived_state=NULL,updated_at=? WHERE id=? AND archived_at IS NOT NULL",
+        )
+        .bind(Date.now(), id),
+      audit(db, user, "restore", id),
+    ]);
+    return json(await detail(db, id, env));
+  }
+  if (c.archived_at)
+    fail(409, "Restore this campaign from Trash before changing it.");
+  if (action === "rename" && method === "POST") {
+    const name = inline(b.name).slice(0, 120);
+    if (!name) fail(400, "Enter a campaign name");
+    await db.batch([
+      db
+        .prepare("UPDATE campaigns SET name=?,updated_at=? WHERE id=?")
+        .bind(name, Date.now(), id),
+      audit(db, user, "rename", id),
+    ]);
+    return json(await detail(db, id, env));
+  }
+  if (action === "copy" && method === "POST") {
+    const copyId = crypto.randomUUID(),
+      importId = crypto.randomUUID(),
+      now = Date.now();
+    // New recipient IDs and claims prevent carrying delivery state into a new draft.
+    await db.batch([
+      db
+        .prepare(
+          "INSERT INTO campaigns(id,name,subject,html,import_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
+        )
+        .bind(
+          copyId,
+          `${c.name.slice(0, 110)} (copy)`,
+          c.subject,
+          c.html,
+          importId,
+          now,
+          now,
+        ),
+      db
+        .prepare(
+          "INSERT INTO recipients(id,campaign_id,import_id,team,name,email,members,issue,enabled,shared_confirmed) SELECT lower(hex(randomblob(16))),?,?,team,name,email,members,issue,enabled,shared_confirmed FROM recipients WHERE campaign_id=? AND import_id=? AND is_test=0",
+        )
+        .bind(copyId, importId, id, c.import_id || ""),
+      audit(db, user, "copy", copyId),
+    ]);
+    return json(await detail(db, copyId, env));
+  }
   if (["save", "import", "recipient"].includes(action)) {
     if (c.state !== "draft")
       fail(
@@ -388,6 +488,7 @@ async function route(request, env) {
     if (!Array.isArray(b.teams) || b.teams.length > 10000)
       fail(400, "Invalid team list");
     const importId = crypto.randomUUID();
+    const seen = new Set();
     const teams = b.teams.map((p) => {
       if (!p || !Array.isArray(p.members) || p.members.length > 10)
         fail(400, "Each team must have at most 10 members");
@@ -399,7 +500,21 @@ async function route(request, env) {
           ]),
         ),
       );
-      return { ...p, members };
+      const email = clean(p.email).toLowerCase(),
+        team = inline(p.team),
+        name = inline(p.name),
+        duplicate = seen.has(email);
+      if (email) seen.add(email);
+      const issue = !team
+        ? "Missing team name"
+        : !name
+          ? "Missing first participant name"
+          : !validEmail(email)
+            ? "Invalid first participant email"
+            : duplicate && !p.shared_confirmed
+              ? "Shared recipient address. Confirm this team should receive its own email."
+              : "";
+      return { ...p, members, issue };
     });
     for (let offset = 0; offset < teams.length; offset += 500) {
       await db.batch(
@@ -408,7 +523,7 @@ async function route(request, env) {
           .map((p) =>
             db
               .prepare(
-                "INSERT INTO recipients(id,campaign_id,import_id,team,name,email,members,issue,enabled) VALUES(?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO recipients(id,campaign_id,import_id,team,name,email,members,issue,enabled,shared_confirmed) VALUES(?,?,?,?,?,?,?,?,?,?)",
               )
               .bind(
                 crypto.randomUUID(),
@@ -420,6 +535,7 @@ async function route(request, env) {
                 JSON.stringify(p.members),
                 inline(p.issue).slice(0, 255),
                 p.enabled === false || p.enabled === 0 ? 0 : 1,
+                p.shared_confirmed ? 1 : 0,
               ),
           ),
       );
@@ -485,6 +601,11 @@ async function route(request, env) {
     if (c.tested_version !== c.version)
       fail(409, "Send a successful test of the current draft first");
     if (c.state === "draft") {
+      if (b.reviewed !== true)
+        fail(
+          400,
+          "Confirm that you reviewed the test email and recipient list before launch.",
+        );
       if (c.tested_version !== c.version)
         fail(409, "Send a successful test of the current draft first");
       const list = (
@@ -688,13 +809,27 @@ async function runner(request, env, action) {
     )
     .bind(now + Math.ceil(60000 / s.perMinute), now)
     .first();
-  if (!lock) return json({ wait: Math.max(1, Math.ceil(60 / s.perMinute)) });
+  if (!lock) {
+    const current = await db
+      .prepare("SELECT next_at FROM sender WHERE id=1")
+      .first();
+    return json({
+      wait: Math.max(0.05, (current.next_at - Date.now()) / 1000),
+    });
+  }
   const results = await db.batch([
     db
       .prepare(
-        `UPDATE recipients SET status='sending',claim=?,claimed_at=?,attempts=attempts+1 WHERE id=(SELECT r.id FROM recipients r JOIN campaigns c ON c.id=r.campaign_id WHERE r.status='queued' AND r.enabled=1 AND ((r.is_test=1 AND c.state='draft' AND r.import_id=CAST(c.version AS TEXT)) OR (r.is_test=0 AND c.state='running' AND r.import_id=c.import_id)) ORDER BY r.is_test DESC,c.created_at,r.id LIMIT 1) AND status='queued' AND NOT EXISTS(SELECT 1 FROM recipients WHERE status='sending') AND (SELECT COUNT(*) FROM attempts WHERE started_at>?)<? RETURNING *`,
+        `UPDATE recipients SET status='sending',claim=?,claimed_at=?,attempts=attempts+1 WHERE id=(SELECT r.id FROM recipients r JOIN campaigns c ON c.id=r.campaign_id WHERE r.status='queued' AND r.enabled=1 AND (?='' OR (r.id=? AND r.is_test=1)) AND ((r.is_test=1 AND c.state='draft' AND r.import_id=CAST(c.version AS TEXT)) OR (r.is_test=0 AND c.state='running' AND r.import_id=c.import_id)) ORDER BY r.is_test DESC,c.created_at,r.id LIMIT 1) AND status='queued' AND NOT EXISTS(SELECT 1 FROM recipients WHERE status='sending') AND (SELECT COUNT(*) FROM attempts WHERE started_at>?)<? RETURNING *`,
       )
-      .bind(claim, now, now - 86400000, s.dailyLimit),
+      .bind(
+        claim,
+        now,
+        clean(b.testId),
+        clean(b.testId),
+        now - 86400000,
+        s.dailyLimit,
+      ),
     db
       .prepare(
         "INSERT INTO attempts(id,recipient_id,started_at) SELECT ?,id,? FROM recipients WHERE claim=? AND status='sending'",

@@ -2,6 +2,11 @@ name: Campaign sender
 
 on:
   workflow_dispatch:
+    inputs:
+      test_id:
+        description: 'Optional: send only this queued test recipient ID, then stop'
+        required: false
+        type: string
   schedule:
     - cron: '3-59/10 * * * *'
 
@@ -25,6 +30,8 @@ jobs:
           node-version: 22
       - run: npm ci --ignore-scripts
         working-directory: scripts/campaign-sender
+      - run: node --test test.mjs
+        working-directory: scripts/campaign-sender
       - run: node send.mjs
         working-directory: scripts/campaign-sender
         env:
@@ -36,3 +43,4 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.CAMPAIGN_SMTP_PASSWORD || secrets.SMTP_PASSWORD }}
           BREVO_API_KEY: ${{ secrets.CAMPAIGN_BREVO_API_KEY }}
           MAX_MINUTES: '330'
+          CAMPAIGN_TEST_ID: ${{ inputs.test_id }}
