@@ -2,6 +2,7 @@ import {
   attendeesFromCsv, cleanAttendee, createToken, normalizeToken, randomHex, sha256Hex, verifyPassword,
 } from './ticketing-shared.mjs';
 import { MailError, handleMailApi, handleRunnerApi } from './mail.mjs';
+import { CaseError, handleCaseAdminApi } from './cases.mjs';
 
 export const API_PREFIX = '/api/tm/';
 const EVENT_ID = 1;
@@ -318,6 +319,11 @@ async function route(request, env, ctx) {
     if (response) return response;
   }
 
+  if (path === 'cases' || path.startsWith('cases/')) {
+    const response = await handleCaseAdminApi(request, env, path, username);
+    if (response) return response;
+  }
+
   if (path === 'ticket-template' && method === 'GET') return ticketTemplate(env);
 
   const match = path.match(/^attendees\/(\d+)(\/attendance|\/ticket)?$/);
@@ -336,7 +342,7 @@ export async function handleTicketApi(request, env, ctx) {
     if (!env.DB) throw new HttpError(503, 'Ticket database is not connected');
     return await route(request, env, ctx);
   } catch (error) {
-    if (error instanceof HttpError || error instanceof MailError) return json({ error: error.message }, error.status);
+    if (error instanceof HttpError || error instanceof MailError || error instanceof CaseError) return json({ error: error.message }, error.status);
     console.error('Ticket API error', error);
     return json({ error: 'Something went wrong. Try again.' }, 500);
   }

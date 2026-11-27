@@ -70,6 +70,15 @@ This project uses no request-time Next.js features.
 
 Official reference: https://developers.cloudflare.com/pages/framework-guides/nextjs/deploy-a-static-nextjs-site/
 
+## Case files for participants
+
+Organizers sign in at `https://nsumibc.online/casemanagement/` with their ticket desk organizer ID. Upload a case PDF (up to 25 MB) with a title and an optional note, and the dashboard gives a link like `https://nsumibc.online/case/<code>/` to share with participants. Anyone with the link can read the case in the browser (page jump, zoom, full screen) and download it when downloads are allowed. Each case can be edited, have its PDF replaced (the link stays the same), switched to view only, hidden, or deleted, and the dashboard counts views and downloads.
+
+- `worker/cases.mjs` serves the organizer API under `/api/tm/cases` (same session as the ticket desk) and the public API under `/api/cases/<code>`.
+- Case details live in the `cases` table of the `mibc-tickets` D1 database (`migrations/0004_cases.sql`; the Worker also creates the table on first use). PDF bytes are stored in the `TICKET_IMAGES` KV namespace under `case-file:<code>`.
+- Links use random 12 character codes, so cases cannot be found by guessing. View only hides the download buttons and blocks the download URL, but participants can still screenshot pages.
+- The viewer uses PDF.js, copied into `public/pdfjs/` from the `pdfjs-dist` package (version in `public/pdfjs/VERSION.txt`).
+
 ## Ticket desk (event check-in)
 
 Organizers sign in at `https://nsumibc.online/ticketmanagement/` on their phones. The **Scan** tab opens the rear camera and keeps it running. Each ticket QR is checked against the attendee list on the phone first, so the result card appears instantly; the check-in then syncs to the server. A card stays for 5 seconds: green for checked in, amber for already checked in (with the first scan time and organizer), red for unknown codes. Scans made while offline are saved on the phone and sync later. The **Event** tab edits the event name, shows attendance numbers, lists everyone with search and filters, marks people present by hand, adds people one at a time or from a CSV, exports attendance as CSV, and shows or downloads any person's QR. Tap a person, then **Edit details** to correct a name, student ID or email: a new name or ID rebuilds their banner ticket in the browser from the stored template (the QR code stays the same), and **Resend ticket email** queues just that person for the mail sender.

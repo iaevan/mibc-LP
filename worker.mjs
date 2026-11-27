@@ -1,5 +1,6 @@
 import { API_PREFIX, handleTicketApi, serveTicketPage } from './worker/ticketing.mjs';
 import { campaignGateway, serveAdmin } from './worker/campaigns/gateway.mjs';
+import { PUBLIC_CASE_API, handlePublicCaseApi, serveCasePage } from './worker/cases.mjs';
 
 const PREFIX = '/mibc-pulse';
 const PROJECT_TOKEN = 'phc_DbtF2v2rM5f4jj4quFvWzDebRTytBxvbhKNsLvgc2Zim';
@@ -10,6 +11,9 @@ export default {
     if (url.pathname === '/api/campaigns' || url.pathname.startsWith('/api/campaigns/')) return campaignGateway(request, env);
     if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return serveAdmin(request, env);
     if (url.pathname.startsWith(API_PREFIX)) return handleTicketApi(request, env, ctx);
+    if (url.pathname.startsWith(PUBLIC_CASE_API)) return handlePublicCaseApi(request, env, ctx);
+    if (url.pathname === '/case' || url.pathname.startsWith('/case/')) return serveCasePage(request, env, '/case/');
+    if (url.pathname === '/casemanagement' || url.pathname.startsWith('/casemanagement/')) return serveCasePage(request, env, '/casemanagement/');
     if (url.pathname === '/ticketmanagement' || url.pathname.startsWith('/ticketmanagement/')) return serveTicketPage(request, env);
     if (!url.pathname.startsWith(`${PREFIX}/`)) return env.ASSETS.fetch(request);
 
