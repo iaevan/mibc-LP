@@ -18,22 +18,32 @@ The website forwards campaign requests over HTTPS to the separate backend. A pri
 
 The campaign backend does not have ticket database or ticket-image bindings. The existing ticket sender is unchanged. Both senders currently use the same Hostinger mailbox; they therefore share its real provider quota. This system cannot see unrelated mailbox use. Lower its allowance if ticket or manual email volume is high.
 
-## Organizer flow
+## Accounts and roles
 
-1. Sign in with a campaign account and create a named campaign.
-2. Upload the CSV exported from the registration spreadsheet. Google Forms repeated member headings are supported. The first participant group's email is selected, not the submission email at the beginning of a row. Other members are retained for team details but receive no email.
-3. Review flagged rows. Correct or exclude missing/invalid recipients. Shared addresses require explicit confirmation. Save the team list. New imports do not overwrite the active list until the whole import succeeds.
-4. Compose the subject and body. Paste formatted Google Docs content or upload HTML. Bold, italic, underline, lists, links, tables and basic alignment are supported. Scripts, external images and unsafe styling are removed. Save explicitly before leaving the step.
-5. Use `{{team_name}}` and `{{recipient_name}}` in the subject or body. Choose a team in Review & test to see its personalized copy. Unsupported or incomplete placeholders block sending.
-6. Queue a test to your own address. Wait for the scheduled sender and inspect the actual email. Provider acceptance of the current saved version is required before launch. Editing the template or team list invalidates the previous test.
-7. Check the confirmation box after reviewing the actual test email and selected recipients. Launch freezes the campaign and recipient list. Use **Copy and edit** to prepare corrected content after launch; the new copy starts as a draft and needs a fresh test.
-8. Use Sending & results to pause, resume, search, filter, export results, retry failed emails or resend an individual copy. A paused sender may finish its one in-progress email.
+- **Main admins** sign in with an nsumibc.online address. They manage team lists, emails and sending, and can read the activity log.
+- **Helpers** sign in with a short username. They see only Team lists: they can create lists from a sheet, add teams from another sheet, edit, add, delete and restore teams, and move teams between rounds. Emails, sending and the activity log are hidden from them.
+- Every change by anyone is written to the activity log with the person's name, what changed, and the old and new values.
 
-The campaign list offers Add campaign, Edit or View results, Rename, Delete and View trash. Delete moves a stopped campaign to restorable Trash, preserving delivery history. Pause a running campaign and let its in-progress email finish before deleting. Restore does not start sending.
+Add or reset an account by passing JSON over standard input to `node scripts/campaigns.mjs user`: `{"username":"...","password":"...","role":"admin"|"helper","name":"Display name"}`. Never put passwords in saved commands or repository files.
 
-Draft teams support manual Add team and Remove team. Open Edit details to see separately labeled member information. Edit member changes names, addresses, institute, student ID and phone. Member 1 remains the email recipient, and changes to their name/address also update the selected recipient. Extra members can be added or removed. Save team changes before moving to the next step. Missing or duplicated recipient addresses are flagged; a shared address needs confirmation.
+## Team lists
 
-`Provider accepted` is not proof of inbox delivery. Hostinger SMTP does not supply a recipient delivery webhook here, so bounces, spam placement and opens are not presented as delivery facts. There is no tracking pixel.
+1. Download the registration sheet from Google Sheets as CSV (File, Download, Comma-separated values) and create a team list with a name and the number of rounds.
+2. The importer reads the Team Name column and the repeated Name, Institute, Student ID, Email and Phone groups. Member 1 is the leader and the only recipient. The submitter email at the start of the row is ignored. A first heading renamed to "Leader Name" also works. Bangladeshi mobile numbers that lost their leading zero get it back.
+3. Teams are sorted by team name. "Needs attention" lists teams with a missing team name, leader name or leader email, and teams that share a leader email or team name with another team. A duplicate can be kept on purpose by ticking "This is a different team".
+4. Open a team to edit it. Changes save about a second after typing stops. If someone else changed the same team first, the editor says who and offers to load the latest version instead of overwriting it.
+5. "Add teams from a sheet" never replaces anything. Teams whose team name or leader email already exist are skipped.
+6. "Move qualified teams" takes pasted team names or leader emails, one per line. Unique matches are moved; duplicate names ask which team is meant; unknown lines are listed. Teams can also be ticked in the list and moved together. Moving a team back works the same way.
+
+## Sending an email
+
+1. Create an email and pick the team list. Under "Who gets it" choose All teams or Teams in Round N (teams that reached that round or later). Individual teams can be unticked. Teams with problems are skipped until they are fixed.
+2. Write the subject and body. `{{team_name}}` and `{{leader_name}}` are replaced for each team. Paste from Google Docs keeps bold, italic, lists and links. For a case PDF, upload it at `/casemanagement/`, copy its share link and paste it in "Case link"; the email ends with an "Open the case" link. Everything autosaves.
+3. Review and send shows the sender, audience, time needed and the 24-hour allowance. A test email is optional. Press "Send to N team leaders". The recipient list is copied at that moment, so later team edits never change an email that is already sending.
+4. Start the sender: open the Campaign sender workflow in GitHub Actions (`https://github.com/iaevan/mibc-LP/actions/workflows/campaign-sender.yml`), press Run workflow and confirm. The dashboard shows a warning with this link whenever an email is sending but the sender has not checked in for 90 seconds. GitHub's 10-minute schedule is unreliable and can be hours late, so do not wait for it.
+5. The dashboard updates every 3 seconds while sending: progress bar, sent, waiting, failed and "check delivery" counts, latest activity and every team's status. "Stop sending now" takes effect before the next email; at most one email already handed to the mail server can still go out. Stopped emails can be resumed, failed ones retried, single teams resent, and results downloaded as CSV.
+
+`Sent` means the mail server accepted the email. It is not proof of inbox delivery, and there is no open tracking.
 
 ## Limits and failure recovery
 
@@ -46,8 +56,8 @@ Draft teams support manual Add team and Remove team. Open Edit details to see se
 - Claims and attempt reservations are atomic. Network retries reuse a claim; reporting is idempotent. A process crash after SMTP acceptance is treated as uncertain, rather than automatically retried.
 - An abandoned claim becomes uncertain after ten minutes and pauses a running campaign. Check Hostinger Sent/provider logs or the recipient first. Then confirm delivery without resending, or explicitly retry while accepting the risk of a duplicate.
 - Authentication, quota and transport trouble pauses the affected running campaign. Test failures leave the campaign editable in draft.
-- Draft version checks reject conflicting saves from two browsers. Reload and review instead of overwriting another organizer's changes.
-- Team cards are paginated and searchable. Attempt history shows the latest 500 attempts across the campaign; the ledger retains the full history in D1.
+- Version checks reject conflicting saves of the same team or email from two browsers, and say who made the other change.
+- Team lists, audiences and results are paginated and searchable. The attempt ledger keeps the full history in D1.
 
 For higher volume, `scripts/campaign-sender/send.mjs` has a separate Brevo transport. Before changing `CAMPAIGN_PROVIDER` to `brevo`, authenticate the sending domain, set the hidden `CAMPAIGN_BREVO_API_KEY` Actions secret, and choose an allowance/rate matching the purchased or free provider plan. The account is not created or activated by this code. Keep imports and templates unchanged when replacing a transport.
 

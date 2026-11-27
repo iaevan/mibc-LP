@@ -523,3 +523,352 @@
     gap: 10px;
   }
 }
+
+/* Team lists, rounds, live dashboard and activity log */
+.app textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #200d15;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  resize: vertical;
+}
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tabs button {
+  border-radius: 10px;
+  background: transparent;
+  border-color: transparent;
+}
+.tabs button[aria-current] {
+  background: #ead5c5;
+  color: #321522;
+}
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 0 16px;
+}
+.searchRow {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 0 16px;
+  align-items: end;
+}
+.searchRow .actions {
+  margin: 18px 0;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.chips button {
+  border-radius: 10px;
+  padding: 8px 14px;
+}
+.chips button strong {
+  margin-left: 6px;
+}
+.chips button[aria-pressed="true"] {
+  background: #ead5c5;
+  color: #321522;
+}
+.app .warnChip {
+  border-color: #d58a60;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  margin-left: 6px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background: #4b2938;
+  color: var(--ink);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.badge[data-state="running"],
+.badge[data-state="sending"] {
+  background: #ead5c5;
+  color: #321522;
+}
+.badge[data-state="done"],
+.badge[data-state="sent"] {
+  background: #2f4a2c;
+  color: #d6f0cc;
+}
+.badge[data-state="failed"],
+.badge[data-state="uncertain"],
+.badge[data-state="paused"] {
+  background: #5b2330;
+  color: #ffd2d8;
+}
+.flag {
+  display: block;
+}
+.check {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink) !important;
+}
+.selectionBar {
+  position: sticky;
+  top: 8px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  background: #3a1a28;
+  border: 1px solid #916878;
+  border-radius: 14px;
+}
+.selectionBar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.selectionBar select {
+  width: auto !important;
+}
+.compactList {
+  margin: 8px 0;
+  padding-left: 20px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.matchList {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.matchList li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+}
+.matchList li + li {
+  border-top: 1px solid var(--line);
+}
+.matchList li[data-status="missing"] span {
+  color: #ffbdc4;
+}
+.matchList li[data-status="match"] span {
+  color: #cfe9c5;
+}
+.matchList label {
+  margin: 4px 0 0;
+}
+.summaryBox {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.app .linkButton {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-decoration: underline;
+  color: inherit;
+}
+.audienceRow {
+  display: grid !important;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px !important;
+  margin: 0 !important;
+  padding: 14px 16px;
+  color: var(--ink) !important;
+  cursor: pointer;
+}
+.audienceRow + .audienceRow {
+  border-top: 1px solid var(--line);
+}
+.audienceRow > span {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.resultRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+}
+.resultRow + .resultRow {
+  border-top: 1px solid var(--line);
+}
+.resultRow > div:first-child {
+  display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.facts {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+.facts dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.progress {
+  height: 14px;
+  margin: 16px 0 8px;
+  border-radius: 999px;
+  background: #200d15;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  background: #ead5c5;
+  transition: width 400ms ease-out;
+}
+.app .stat {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #200d15;
+  text-align: left;
+}
+.app .stat[aria-pressed="true"] {
+  border-color: #ead5c5;
+}
+.app .stat strong {
+  font-size: 1.8rem;
+  line-height: 1.1;
+}
+.app .stop {
+  background: #b93a4c;
+  border-color: #e7798a;
+  color: #fff;
+  font-weight: 600;
+}
+.app .stop:hover {
+  background: #a02f40;
+}
+.app .big {
+  min-height: 52px;
+  padding: 12px 24px;
+  font-size: 1.05rem;
+}
+.warning {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding: 16px;
+  margin: 16px 0;
+  border-radius: 12px;
+  background: #4a3016;
+  border: 1px solid #c98a3c;
+  color: #ffe6c4;
+}
+.buttonLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 24px;
+  background: #ead5c5;
+  color: #321522 !important;
+  font-weight: 600;
+  text-decoration: none;
+}
+.empty {
+  padding: 20px 16px;
+  color: var(--muted);
+}
+.activity {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.activity li {
+  display: grid;
+  grid-template-columns: 170px 200px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 16px;
+  overflow-wrap: anywhere;
+}
+.activity li + li {
+  border-top: 1px solid var(--line);
+}
+.member {
+  margin: 0;
+}
+.member legend {
+  padding: 0 6px;
+  font-weight: 600;
+}
+.member > button {
+  margin-top: 12px;
+}
+.members {
+  margin: 16px 0;
+}
+@media (max-width: 760px) {
+  .searchRow {
+    grid-template-columns: 1fr;
+  }
+  .resultRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .resultRow > .actions {
+    grid-column: 1 / -1;
+  }
+  .activity li {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .tabs {
+    order: 3;
+    width: 100%;
+  }
+  .tabs button {
+    flex: 1;
+    padding: 8px 10px;
+  }
+  .app .big {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress span {
+    transition: none;
+  }
+}
+.app .stat span {
+  text-transform: none;
+}

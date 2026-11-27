@@ -128,22 +128,28 @@ async function main() {
       );
     let input = "";
     for await (const chunk of process.stdin) input += chunk;
-    const { username, password } = JSON.parse(input);
+    // Main admins sign in with an nsumibc.online address. Helpers use a short
+    // username and can only manage team lists.
+    const { username, password, role = "admin", name = "" } = JSON.parse(input);
     if (
-      !/^[^\s@]+@nsumibc\.online$/.test(username) ||
+      !["admin", "helper"].includes(role) ||
       typeof password !== "string" ||
-      password.length < 8
+      password.length < 8 ||
+      (role === "admin"
+        ? !/^[^\s@]+@nsumibc\.online$/.test(username)
+        : !/^[a-z][a-z0-9._-]{2,31}$/.test(username))
     )
       throw new Error(
-        "Use an nsumibc.online address and a password of at least 8 characters.",
+        "Main admins need an nsumibc.online address, helpers a short lowercase username, and both a password of at least 8 characters.",
       );
     const hash = await hashPassword(password),
       file = resolve(root, `.wrangler/campaign-account-${randomUUID()}.sql`);
-    const quote = (text) => `'${text.replaceAll("'", "''")}'`;
+    const quote = (text) => `'${String(text).replaceAll("'", "''")}'`;
+    const user = quote(username.toLowerCase());
     await mkdir(resolve(root, ".wrangler"), { recursive: true });
     await writeFile(
       file,
-      `INSERT INTO admins(username,password_hash) VALUES(${quote(username.toLowerCase())},${quote(hash)}) ON CONFLICT(username) DO UPDATE SET password_hash=excluded.password_hash;\nDELETE FROM admin_sessions WHERE username=${quote(username.toLowerCase())};`,
+      `INSERT INTO admins(username,password_hash,role,display_name) VALUES(${user},${quote(hash)},${quote(role)},${name ? quote(name.slice(0, 80)) : "NULL"}) ON CONFLICT(username) DO UPDATE SET password_hash=excluded.password_hash,role=excluded.role,display_name=COALESCE(excluded.display_name,admins.display_name);\nDELETE FROM admin_sessions WHERE username=${user};`,
     );
     try {
       await run([

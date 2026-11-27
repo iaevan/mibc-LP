@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import {
   handleCampaignApi,
-  importTeams,
+  parseTeamSheet,
+  withIssues,
+  fixPhone,
   safeHtml,
   render,
 } from "../worker/campaigns/api.mjs";
@@ -13,26 +15,9 @@ import { campaignGateway } from "../worker/campaigns/gateway.mjs";
 
 // Real SQLite statements behind the same binding interface, without network or SMTP.
 const sqlite = new DatabaseSync(":memory:");
-sqlite.exec(
-  await readFile(
-    new URL("../campaign-migrations/0001_campaigns.sql", import.meta.url),
-    "utf8",
-  ),
-);
-sqlite.exec(
-  await readFile(
-    new URL("../campaign-migrations/0002_campaign_trash.sql", import.meta.url),
-    "utf8",
-  ),
-);
-const cleanupMigration = await readFile(
-  new URL(
-    "../campaign-migrations/0003_drop_replaced_team_lists.sql",
-    import.meta.url,
-  ),
-  "utf8",
-);
-sqlite.exec(cleanupMigration);
+const migrationDir = new URL("../campaign-migrations/", import.meta.url);
+for (const file of (await readdir(migrationDir)).filter((f) => f.endsWith(".sql")).sort())
+  sqlite.exec(await readFile(new URL(file, migrationDir), "utf8"));
 class Statement {
   constructor(sql, args = []) {
     this.sql = sql;
@@ -77,9 +62,14 @@ const db = {
 };
 const env = { CAMPAIGN_DB: db, CAMPAIGN_RUNNER_TOKEN: "synthetic-test-token" };
 const password = "synthetic-test-only";
-sqlite
-  .prepare("INSERT INTO admins VALUES(?,?)")
-  .run("test@nsumibc.online", await hashPassword(password));
+const addUser = async (username, role, name = null) =>
+  sqlite
+    .prepare("INSERT INTO admins(username,password_hash,role,display_name) VALUES(?,?,?,?)")
+    .run(username, await hashPassword(password), role, name);
+await addUser("test@nsumibc.online", "admin");
+await addUser("lengra", "helper", "Lengra Faiyaz");
+await addUser("madok", "helper", "Madok Mursalin");
+
 let cookie = "";
 async function call(path = "", data, expected = 200, headers = {}) {
   const response = await handleCampaignApi(
@@ -94,147 +84,280 @@ async function call(path = "", data, expected = 200, headers = {}) {
   assert.equal(response.status, expected, `${path}: ${JSON.stringify(result)}`);
   return { result, response };
 }
+async function login(username) {
+  const { response, result } = await call("login", { username, password });
+  cookie = response.headers.get("set-cookie").split(";")[0];
+  return result;
+}
 const runner = (action, data) =>
   call(`runner/${action}`, data, 200, {
     authorization: `Bearer ${env.CAMPAIGN_RUNNER_TOKEN}`,
   });
 const resetRate = () => sqlite.prepare("UPDATE sender SET next_at=0").run();
-const csv =
-  "Timestamp,Email Address,Team Name:,Name:,Institute of the participant:,Student ID:,Email Address:,Phone:,Name:,Institute of the participant:,Student ID:,Email:,Phone:\n2026,submitter@example.com,The Overthinkers,Mahjabin,NSU,2531,first@example.com,0131,Marzuq,NSU,2532,second@example.com,0179";
-const teams = importTeams(csv);
-assert.equal(teams[0].email, "first@example.com");
-assert.equal(teams[0].members.length, 2);
+
+// The Google Forms export: submitter email first, then repeated member groups.
+const csv = [
+  'Timestamp,Email Address,Team Name:,Name:,Institute of the participant:,Student ID:,Email Address:,Phone:,Name:,Institute of the participant:,Student ID:,Email Address:,Phone:,Name:,Institute of the participant:,Student ID:,Email:,Phone:',
+  '11/23/2026 14:00,submitter@example.com,The Overthinkers,Any Ahmed,North South University,2534471042,leader1@example.com,01317419187,Md Marzuq,North South University,2534473043,member@example.com,01795702109,,,,,',
+  '11/24/2026 12:10,someone@example.com,"Taka nai, Idea ase",Israt Jahan,North South University,2621832030,leader2@example.com,1757044271,Md Arafat,North South University,2623422630,arafat@example.com,1612371064,Sumaita Afrid,Bangladesh University,2521141008,sumaita@example.com,1730335682',
+  '11/24/2026 13:00,x@example.com,alpha squad,Rafi,NSU,1,LEADER3@EXAMPLE.COM,01700000000,,,,,,,,,,',
+].join("\n");
+const parsed = parseTeamSheet(csv);
+assert.deepEqual(
+  parsed.map((t) => t.team),
+  ["alpha squad", "Taka nai, Idea ase", "The Overthinkers"],
+  "Teams are sorted by team name",
+);
+const taka = parsed.find((t) => t.team.startsWith("Taka"));
+assert.equal(taka.leader_email, "leader2@example.com", "Member 1 is the leader, not the submitter");
+assert.equal(taka.leader_name, "Israt Jahan");
+assert.equal(taka.members.length, 3);
+assert.equal(taka.members[0].phone, "01757044271", "Lost leading zero restored");
+assert.equal(taka.members[2].institute, "Bangladesh University");
+assert.equal(parsed[0].leader_email, "leader3@example.com", "Emails are lowercased");
+assert.equal(fixPhone("01711111111"), "01711111111");
 assert.equal(
-  importTeams(csv.replace("first@example.com", ""))[0].issue,
-  "Invalid first participant email",
+  parseTeamSheet(csv.replace("Team Name:,Name:", "Team Name:,Leader Name:"))[0].leader_name,
+  "Rafi",
+  "A renamed Leader Name heading still works",
 );
-assert.throws(() => importTeams('Team Name,Name,Email\n"unterminated'));
-assert.ok(
-  importTeams(
-    csv + "\n2026,x@x.com,Second,Other,NSU,2,first@example.com,0",
-  )[1].issue.includes("Shared"),
-);
+assert.throws(() => parseTeamSheet('Team Name,Name,Email\n"unterminated'));
+assert.throws(() => parseTeamSheet("Something,Else\n1,2"));
+const flagged = withIssues([
+  { id: "a", team: "One", leader_name: "A", leader_email: "same@example.com" },
+  { id: "b", team: "Two", leader_name: "B", leader_email: "same@example.com" },
+  { id: "c", team: "one", leader_name: "C", leader_email: "c@example.com" },
+  { id: "d", team: "Four", leader_name: "", leader_email: "d@example.com" },
+  { id: "e", team: "Five", leader_name: "E", leader_email: "bad" },
+]);
+assert.equal(flagged[1].issue, "Same leader email as another team");
+assert.equal(flagged[2].issue, "Same team name as another team");
+assert.equal(flagged[3].issue, "Missing leader name");
+assert.equal(flagged[4].issue, "Leader email is missing or invalid");
 assert.doesNotMatch(
-  safeHtml(
-    '<script>alert(1)</script><img src=x onerror=alert(1)><a href="javascript:alert(1)">x</a>',
-  ),
+  safeHtml('<script>alert(1)</script><img src=x onerror=alert(1)><a href="javascript:alert(1)">x</a>'),
   /script|onerror|javascript/,
 );
-assert.equal(
-  render(
-    { subject: "{{team_name}}", html: "<p>{{team_name}}</p>" },
-    { team: "A\r\nB <img>", name: "N" },
-  ).subject,
-  "A B <img>",
+const rendered = render(
+  { subject: "{{team_name}}", html: "<p>Hi {{leader_name}}</p>", case_link: "https://nsumibc.online/case/abc/" },
+  { team: "A\r\nB <img>", name: "N & M" },
 );
+assert.equal(rendered.subject, "A B <img>");
+assert.match(rendered.html, /Hi N &amp; M/);
+assert.match(rendered.html, /href="https:\/\/nsumibc.online\/case\/abc\/"/);
+
+// Sign-in and roles.
 await call("session", undefined, 401);
-await call(
-  "login",
-  { username: "test@nsumibc.online", password: "wrong" },
-  401,
+await call("login", { username: "lengra", password: "wrong" }, 401);
+const helper = await login("lengra");
+assert.equal(helper.role, "helper");
+assert.equal(helper.name, "Lengra Faiyaz");
+await call("emails", undefined, 403);
+await call("activity", undefined, 403);
+await call("lists", { name: "Blocked" }, 403, { origin: "https://other.local" });
+
+// A helper creates the list from the sheet, then fixes and adds teams.
+const { id: listId } = (await call("lists", { name: "Case Competition 2026", rounds: 3, csv })).result;
+let list = (await call(`lists/${listId}`)).result;
+assert.equal(list.teams.length, 3);
+assert.equal(list.rounds, 3);
+const over = list.teams.find((t) => t.team === "The Overthinkers");
+let edit = (
+  await call(`teams/${over.id}`, {
+    ...over,
+    leader_email: "fixed@example.com",
+    members: over.members.map((m, i) => (i === 1 ? { ...m, phone: "01799999999" } : m)),
+  })
+).result;
+assert.equal(edit.team.leader_email, "fixed@example.com");
+assert.equal(edit.team.members[0].email, "fixed@example.com", "Member 1 follows the leader");
+// A second helper editing an older copy gets a clear conflict, not an overwrite.
+await login("madok");
+const conflict = (await call(`teams/${over.id}`, { ...over, team: "Stale" }, 409)).result;
+assert.match(conflict.error, /Lengra Faiyaz changed this team/);
+assert.equal(conflict.team.leader_email, "fixed@example.com");
+const added = (
+  await call(`lists/${listId}/team`, {
+    team: "Delta",
+    members: [{ name: "Dee", email: "dee@example.com" }],
+  })
+).result;
+assert.equal(added.teams.length, 4);
+// Adding a sheet again skips teams that already exist.
+const merge = (
+  await call(`lists/${listId}/preview`, {
+    csv: csv + "\n11/25/2026,y@example.com,Echo,Eve,NSU,9,eve@example.com,01800000000,,,,,,,,,,",
+  })
+).result;
+assert.deepEqual(
+  merge.teams.map((t) => t.status).sort(),
+  ["existing", "existing", "existing", "new"],
 );
-const login = await call("login", {
-  username: "test@nsumibc.online",
-  password,
+assert.deepEqual(
+  (await call(`lists/${listId}/add`, { teams: merge.teams.filter((t) => t.status === "new") })).result,
+  { added: 1, skipped: 0 },
+);
+list = (await call(`lists/${listId}`)).result;
+assert.equal(list.teams.length, 5);
+const echo = list.teams.find((t) => t.team === "Echo");
+await call(`teams/${echo.id}/delete`, {});
+await call(`teams/${echo.id}/restore`, {});
+
+// Results pasted by team name or leader email move teams to the next round.
+await call(`lists/${listId}/team`, {
+  team: "alpha squad",
+  members: [{ name: "Other", email: "other@example.com" }],
 });
-cookie = login.response.headers.get("set-cookie").split(";")[0];
-assert.ok(login.response.headers.get("set-cookie").includes("HttpOnly"));
-await call("parse", { csv }, 403, { origin: "https://other.local" });
-let c = (await call("", { name: "Integration test" })).result;
-const id = c.id;
-c = (await call(`${id}/import`, { version: c.version, teams })).result;
-c = (
-  await call(`${id}/save`, {
-    version: c.version,
-    name: c.name,
-    subject: "Hello {{team_name}}",
-    html: "<p>Dear {{team_name}}, {{recipient_name}}</p>",
+const match = (
+  await call(`lists/${listId}/match`, {
+    text: "Taka nai, Idea ase\nfixed@example.com\nAlpha Squad\nNobody\n",
+  })
+).result.results;
+assert.deepEqual(match.map((m) => m.status), ["match", "match", "ambiguous", "missing"]);
+assert.equal(match[2].candidates.length, 2);
+const qualified = [match[0].candidates[0].id, match[1].candidates[0].id, match[2].candidates[0].id];
+const moved = (await call(`lists/${listId}/round`, { teamIds: qualified, round: 2 })).result;
+assert.equal(moved.moved, 3);
+await call(`lists/${listId}/round`, { teamIds: qualified, round: 4 }, 400);
+await call(`lists/${listId}/settings`, { rounds: 1 }, 409);
+
+// Main admins see the activity log with helper names.
+await login("test@nsumibc.online");
+const log = (await call("activity")).result;
+assert.ok(log.items.some((a) => a.name === "Lengra Faiyaz" && a.summary.includes('leader email "leader1@example.com" to "fixed@example.com"')));
+assert.ok(log.items.some((a) => a.name === "Madok Mursalin" && a.action === "move_round"));
+assert.ok(log.people.some((p) => p.username === "sada") === false);
+
+// Round 2 email: audience, optional test, launch snapshot and live stats.
+let email = (await call("emails", { name: "Round 2 case", list_id: listId })).result;
+email = (
+  await call(`emails/${email.id}/save`, {
+    version: email.version,
+    subject: "Round 2: {{team_name}}",
+    html: "<p>Dear {{leader_name}}, your team {{team_name}} qualified.</p>",
+    audience_round: 2,
+    case_link: "https://nsumibc.online/case/round2/",
   })
 ).result;
-await call(
-  `${id}/save`,
-  { version: c.version - 1, subject: "stale", html: "old" },
-  409,
-);
-await call(`${id}/start`, { reviewed: true }, 409);
-c = (
-  await call(`${id}/test`, {
-    email: "admin@example.com",
-    recipientId: c.people[0].id,
-  })
+await call(`emails/${email.id}/save`, { version: email.version - 1, subject: "stale" }, 409);
+await call(`emails/${email.id}/save`, { version: email.version, case_link: "javascript:alert(1)" }, 400);
+let audience = (await call(`emails/${email.id}/audience`)).result;
+assert.equal(audience.teams.length, 3, "Round 2 audience is the qualified teams only");
+const skip = audience.teams.find((t) => t.team === "alpha squad");
+email = (await call(`emails/${email.id}/save`, { version: email.version, excluded: [skip.id] })).result;
+audience = (await call(`emails/${email.id}/audience`)).result;
+assert.equal(audience.teams.filter((t) => !t.excluded && !t.issue).length, 2);
+// Test emails are optional and go only to the test address.
+email = (
+  await call(`emails/${email.id}/test`, { email: "admin@example.com", teamId: audience.teams[0].id })
 ).result;
-const claim = crypto.randomUUID();
-let job = (await runner("claim", { claim })).result;
+const testClaim = crypto.randomUUID();
+let job = (await runner("claim", { claim: testClaim })).result;
 assert.equal(job.to.email, "admin@example.com");
-assert.match(job.subject, /\[TEST\] Hello The Overthinkers/);
-assert.equal((await runner("claim", { claim })).result.claim, claim);
-assert.ok((await runner("claim", { claim: crypto.randomUUID() })).result.wait);
-await runner("report", { claim, ok: true, messageId: "test-accepted" });
-await runner("report", { claim, ok: false }); // Idempotent report.
-c = (await call(id)).result;
-assert.equal(c.tested_version, c.version);
-c = (await call(`${id}/start`, { reviewed: true })).result;
-assert.equal(c.state, "running");
-await call(`${id}/import`, { version: c.version, teams }, 409);
-await call(`${id}/pause`, {});
+assert.match(job.subject, /^\[TEST\] Round 2: /);
+assert.match(job.html, /Open the case/);
+await runner("report", { claim: testClaim, ok: true, messageId: "test" });
+await call(`emails/${email.id}/start`, { confirm: true, expected: 5 }, 409);
+await call(`emails/${email.id}/start`, { expected: 2 }, 400);
+email = (await call(`emails/${email.id}/start`, { confirm: true, expected: 2 })).result;
+assert.equal(email.state, "running");
+assert.equal(email.counts.total, 2);
+await call(`emails/${email.id}/save`, { version: email.version, subject: "late" }, 409);
+// Editing a team after launch does not change who receives the sent email.
+await login("lengra");
+list = (await call(`lists/${listId}`)).result;
+const taka2 = list.teams.find((t) => t.team.startsWith("Taka"));
+await call(`teams/${taka2.id}`, { ...taka2, leader_email: "changed@example.com" });
+await login("test@nsumibc.online");
+resetRate();
+const first = crypto.randomUUID();
+job = (await runner("claim", { claim: first })).result;
+assert.equal(job.to.email, "leader2@example.com", "Sent in team name order, using the address from launch time");
+assert.equal(job.subject, "Round 2: Taka nai, Idea ase");
+await runner("report", { claim: first, ok: false, error: "Mailbox full" });
+let stats = (await call(`emails/${email.id}/stats`)).result;
+assert.equal(stats.counts.failed, 1);
+assert.equal(stats.counts.queued, 1);
+assert.equal(stats.recent[0].status, "failed");
+// Stop takes effect before the next claim.
+await call(`emails/${email.id}/pause`, {});
 resetRate();
 assert.ok((await runner("claim", { claim: crypto.randomUUID() })).result.stop);
-await call(`${id}/start`, { reviewed: true });
+await call(`emails/${email.id}/retry`, { status: "failed" });
+await call(`emails/${email.id}/start`, {});
 resetRate();
-const primary = crypto.randomUUID();
-job = (await runner("claim", { claim: primary })).result;
-assert.equal(job.to.email, "first@example.com");
-assert.ok(!JSON.stringify(job).includes("second@example.com"));
-await runner("report", {
-  claim: primary,
-  ok: false,
-  uncertain: true,
-  pause: true,
-  error: "Connection lost",
-});
-c = (await call(id)).result;
-assert.equal(c.state, "paused");
-assert.equal(c.people.find((p) => !p.is_test).status, "uncertain");
-await call(`${id}/retry`, { status: "uncertain" }, 400);
-c = (await call(`${id}/retry`, { status: "uncertain", confirm: true })).result;
-await call(`${id}/start`, { reviewed: true });
+const second = crypto.randomUUID();
+job = (await runner("claim", { claim: second })).result;
+assert.equal(job.to.email, "leader2@example.com", "A retried email keeps the address from launch time");
+await runner("report", { claim: second, ok: true, messageId: "ok" });
 resetRate();
-const retry = crypto.randomUUID();
-job = (await runner("claim", { claim: retry })).result;
-await runner("report", { claim: primary, ok: true }); // A stale report cannot overwrite a new attempt.
-c = (await call(id)).result;
-assert.equal(c.people.find((p) => !p.is_test).status, "sending");
-await runner("report", { claim: retry, ok: true, messageId: "accepted" });
+const third = crypto.randomUUID();
+job = (await runner("claim", { claim: third })).result;
+assert.equal(job.to.email, "fixed@example.com");
+assert.match(job.html, /Dear Any Ahmed, your team The Overthinkers qualified/);
+await runner("report", { claim: third, ok: true, messageId: "ok" });
 resetRate();
 await runner("claim", { claim: crypto.randomUUID() });
-c = (await call(id)).result;
-assert.equal(c.state, "done");
-assert.equal(c.people.find((p) => !p.is_test).status, "sent");
-assert.equal(c.history.length, 3);
-// Resends require an explicit confirmation, and reserve quota again.
-await call(`${id}/retry`, { status: "sent" }, 400);
-await call(`${id}/retry`, { status: "sent", confirm: true });
-await call(`${id}/start`, { reviewed: true });
+email = (await call(`emails/${email.id}`)).result;
+assert.equal(email.state, "done");
+assert.equal(email.counts.sent, 2);
+const page = (await call(`emails/${email.id}/recipients?status=sent`)).result;
+assert.equal(page.total, 2);
+assert.equal((await call(`emails/${email.id}/recipients?q=overthinkers`)).result.total, 1);
+// Resends need confirmation and count against the daily allowance.
+await call(`emails/${email.id}/retry`, { status: "sent" }, 400);
+await call(`emails/${email.id}/retry`, { status: "sent", confirm: true });
+await call(`emails/${email.id}/start`, {});
 resetRate();
 env.CAMPAIGN_DAILY_LIMIT = "3";
 assert.ok((await runner("claim", { claim: crypto.randomUUID() })).result.stop);
-env.CAMPAIGN_DAILY_LIMIT = "0";
-assert.equal((await call(id)).result.settings.ready, false);
+stats = (await call(`emails/${email.id}/stats`)).result;
+assert.ok(stats.settings.resumeAt > Date.now(), "Dashboard can say when sending resumes");
+env.CAMPAIGN_DAILY_LIMIT = "900";
+// Sent emails cannot be deleted mid-send, but stopped ones go to Trash and back.
+await call(`emails/${email.id}/archive`, {}, 409);
+await call(`emails/${email.id}/pause`, {});
+await call(`emails/${email.id}/archive`, {});
+assert.ok((await call("emails?trash=1")).result.some((c) => c.id === email.id));
+assert.equal((await call(`emails/${email.id}/restore`, {})).result.state, "paused");
+const copy = (await call(`emails/${email.id}/copy`, {})).result;
+assert.equal(copy.state, "draft");
+assert.equal(copy.audience_round, 2);
+assert.equal(copy.case_link, "https://nsumibc.online/case/round2/");
+assert.equal(copy.counts, null);
+
+// A diagnostic run can claim only its own test.
+await call(`emails/${copy.id}/test`, { email: "b@example.com", teamId: audience.teams[0].id });
+const target = (await call(`emails/${copy.id}`)).result.tests[0];
+resetRate();
+const targeted = crypto.randomUUID();
+assert.equal((await runner("claim", { claim: targeted, testId: target.id })).result.to.email, "b@example.com");
+await runner("report", { claim: targeted, ok: false, error: "Synthetic" });
+resetRate();
+assert.ok((await runner("claim", { claim: crypto.randomUUID(), testId: "none" })).result.stop);
+
+// 3,000 teams fit the same model, and launching snapshots all of them.
+const big = ["Timestamp,Email Address,Team Name,Name,Email,Phone"];
+for (let i = 0; i < 3000; i++) big.push(`t,s@x.com,Team ${i},Leader ${i},leader${i}@example.com,0170000${String(i).padStart(4, "0")}`);
+const { id: bigList } = (await call("lists", { name: "Scale", rounds: 2, csv: big.join("\n") })).result;
+let bigEmail = (await call("emails", { name: "Everyone", list_id: bigList })).result;
+bigEmail = (
+  await call(`emails/${bigEmail.id}/save`, {
+    version: bigEmail.version,
+    subject: "Hello {{team_name}}",
+    html: "<p>Hi</p>",
+  })
+).result;
+bigEmail = (await call(`emails/${bigEmail.id}/start`, { confirm: true, expected: 3000 })).result;
+assert.equal(bigEmail.counts.total, 3000);
+await call(`emails/${bigEmail.id}/pause`, {});
+
+// Logout, then the isolated backend refuses direct traffic.
 await call("logout", {});
 await call("session", undefined, 401);
-// The cross-account service cannot be used directly, even with a valid user login.
-const serviceEnv = {
-  ...env,
-  CAMPAIGN_GATEWAY_TOKEN: "local-gateway",
-  PUBLIC_ORIGIN: "https://nsumibc.online",
-};
+const serviceEnv = { ...env, CAMPAIGN_GATEWAY_TOKEN: "local-gateway", PUBLIC_ORIGIN: "https://nsumibc.online" };
 assert.equal(
-  (
-    await service.fetch(
-      new Request("https://backend.local/api/campaigns/session"),
-      serviceEnv,
-    )
-  ).status,
+  (await service.fetch(new Request("https://backend.local/api/campaigns/session"), serviceEnv)).status,
   404,
 );
 const forwarded = await service.fetch(
@@ -261,155 +384,15 @@ try {
   };
   const gateway = await campaignGateway(
     new Request("https://nsumibc.online/api/campaigns/session", {
-      headers: {
-        "cf-connecting-ip": "192.0.2.2",
-        "x-campaign-client-ip": "spoofed",
-      },
+      headers: { "cf-connecting-ip": "192.0.2.2", "x-campaign-client-ip": "spoofed" },
     }),
-    {
-      CAMPAIGN_API_ORIGIN: "https://backend.local",
-      CAMPAIGN_GATEWAY_TOKEN: "local-gateway",
-    },
+    { CAMPAIGN_API_ORIGIN: "https://backend.local", CAMPAIGN_GATEWAY_TOKEN: "local-gateway" },
   );
   assert.equal(gateway.status, 200);
 } finally {
   globalThis.fetch = realFetch;
 }
-// A future event with 3,000 teams fits the same independent data model.
-let large = await call("login", { username: "test@nsumibc.online", password });
-cookie = large.response.headers.get("set-cookie").split(";")[0];
-large = (await call("", { name: "Scale check" })).result;
-const many = Array.from({ length: 3000 }, (_, i) => ({
-  ...teams[0],
-  team: `Team ${i}`,
-  email: `leader${i}@example.com`,
-}));
-large = (
-  await call(`${large.id}/import`, { version: large.version, teams: many })
-).result;
-assert.equal(large.people.length, 3000);
-// A failed transport test must not freeze a draft or bypass the test requirement.
-env.CAMPAIGN_DAILY_LIMIT = "900";
-large = (
-  await call(`${large.id}/save`, {
-    version: large.version,
-    name: large.name,
-    subject: "Test {{team_name}}",
-    html: "<p>Hello {{team_name}}</p>",
-  })
-).result;
-await call(`${large.id}/test`, {
-  email: "test@example.com",
-  recipientId: large.people[0].id,
-});
-resetRate();
-const failedTest = crypto.randomUUID();
-assert.equal(
-  (await runner("claim", { claim: failedTest })).result.to.email,
-  "test@example.com",
-);
-await runner("report", {
-  claim: failedTest,
-  ok: false,
-  pause: true,
-  error: "Synthetic SMTP failure",
-});
-large = (await call(large.id)).result;
-assert.equal(large.state, "draft");
-await call(`${large.id}/start`, { reviewed: true }, 409);
-// Campaign controls retain audit/delivery records and cannot delete active sending.
-await call(`${id}/archive`, {}, 409);
-await call(`${id}/pause`, {});
-await call(`${id}/rename`, { name: "Renamed campaign" });
-await call(`${id}/archive`, {});
-assert.ok(!(await call("")).result.some((c) => c.id === id));
-assert.ok((await call("?trash=1")).result.some((c) => c.id === id));
-await call(
-  `${id}/save`,
-  { version: 1, name: "bad", subject: "x", html: "x" },
-  409,
-);
-const restored = (await call(`${id}/restore`, {})).result;
-assert.equal(restored.state, "paused");
-assert.equal(restored.name, "Renamed campaign");
-const copied = (await call(`${id}/copy`, {})).result;
-assert.equal(copied.state, "draft");
-assert.equal(copied.tested_version, null);
-assert.equal(copied.people.length, 1);
-assert.equal(copied.people[0].attempts, 0);
-assert.equal(copied.people[0].status, "queued");
-assert.notEqual(
-  copied.people[0].id,
-  restored.people.find((p) => !p.is_test).id,
-);
-const duplicates = [
-  { ...teams[0], team: "One" },
-  { ...teams[0], team: "Two" },
-];
-let duplicateDraft = (
-  await call(`${copied.id}/import`, {
-    version: copied.version,
-    teams: duplicates,
-  })
-).result;
-assert.ok(duplicateDraft.people.some((p) => p.issue.startsWith("Shared")));
-duplicateDraft = (
-  await call(`${copied.id}/import`, {
-    version: duplicateDraft.version,
-    teams: duplicateDraft.people.map((p) => ({ ...p, shared_confirmed: 1 })),
-  })
-).result;
-assert.ok(duplicateDraft.people.every((p) => !p.issue));
-// Saving a team list replaces the previous draft list instead of keeping every copy.
-const teamRows = (campaignId) =>
-  sqlite
-    .prepare(
-      "SELECT COUNT(*) n FROM recipients WHERE campaign_id=? AND is_test=0",
-    )
-    .get(campaignId).n;
-assert.equal(teamRows(copied.id), 2);
-// Rows left by an earlier interrupted save are removed by the next save.
-sqlite
-  .prepare(
-    "INSERT INTO recipients(id,campaign_id,import_id,team,name,email,members) VALUES(?,?,?,?,?,?,?)",
-  )
-  .run("stray", copied.id, "old-import", "Old", "Old", "old@example.com", "[]");
-assert.equal(teamRows(copied.id), 3);
-// A rejected stale save leaves no stray rows behind.
-const raceVersion = duplicateDraft.version;
-duplicateDraft = (
-  await call(`${copied.id}/import`, {
-    version: raceVersion,
-    teams: duplicateDraft.people,
-  })
-).result;
-await call(
-  `${copied.id}/import`,
-  { version: raceVersion, teams: duplicateDraft.people },
-  409,
-);
-assert.equal(teamRows(copied.id), 2);
-// The one-time cleanup keeps sent history and the active list of launched campaigns.
-const sentRows = teamRows(id);
-sqlite.exec(cleanupMigration);
-assert.equal(teamRows(id), sentRows);
-assert.equal(teamRows(copied.id), 2);
-await call(`${copied.id}/archive`, {});
-assert.equal((await call(`${copied.id}/restore`, {})).result.state, "draft");
-assert.equal((await call(id)).result.settings.perMinute, 20);
-env.CAMPAIGN_PER_MINUTE = "100";
-assert.equal((await call(id)).result.settings.perMinute, 25);
-// A manual diagnostic can claim only its specified test, never another test or team.
-const checkA=(await call(`${id}/copy`,{})).result;
-const checkB=(await call(`${id}/copy`,{})).result;
-await call(`${checkA.id}/test`,{email:'a@example.com',recipientId:checkA.people[0].id});
-const checkBQueued=(await call(`${checkB.id}/test`,{email:'b@example.com',recipientId:checkB.people[0].id})).result;
-const target=checkBQueued.people.find(p=>p.is_test);
-resetRate();const targetedClaim=crypto.randomUUID();
-assert.equal((await runner('claim',{claim:targetedClaim,testId:target.id})).result.to.email,'b@example.com');
-await runner('report',{claim:targetedClaim,ok:false,error:'Synthetic test only'});
-resetRate();assert.ok((await runner('claim',{claim:crypto.randomUUID(),testId:'not-a-queued-test'})).result.stop);
 sqlite.close();
 console.log(
-  "Campaign integration checks passed: auth, isolation, CSV recipient selection, sanitizing, preview tokens, draft conflicts, required tests, claim/report recovery, pause, resends and quota. No emails sent.",
+  "Campaign integration checks passed: sheet parsing, roles, team edits and conflicts, rounds, activity log, audiences, optional tests, launch snapshots, stop and resume, retries, quota and isolation. No emails sent.",
 );
